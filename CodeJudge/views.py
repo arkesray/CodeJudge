@@ -1,7 +1,7 @@
 import os
 import string
 import datetime
-import subprocess
+import threading
 from flask import render_template, session, redirect, request, url_for
 from flask_session import Session
 from passlib.apps import custom_app_context as pwd_context
@@ -12,7 +12,7 @@ from flask_sqlalchemy import SQLAlchemy
 from CodeJudge import app
 
 from models import users, posts, db
-from helpers import login_required, allowed_file
+from helpers import login_required, allowed_file, submitAnswer
 
 
 #globals
@@ -130,7 +130,7 @@ def submitStatus():
     
     uid = session["user_id"]
     user = users.query.filter_by(id = uid).first()
-    post_s = posts.query.filter_by(user_id = uid).all()
+    post_s = posts.query.filter_by(user_id = uid).order_by(posts.ptime.desc()).all()
     
     if user.started == 0:
         return redirect(url_for('start'))
@@ -185,56 +185,27 @@ def upload():
             else:
                  return render_template("error.html", title = "error", message = "File extension not matched")
         
-        callCmd = "python checker.py " + file.filename.split(".")[0] + " " + str(uid) + " " + str(prbid) + " " + lang + " " + path1
+        post_number += 1
 
-        subprocess.call(callCmd)
-
-        """
-        f = open(path1, 'r')
-        sol = f.read()
-        f.close()
-        s_ = submitAnswer(file.filename.split(".")[0], str(uid), str(prbid), sol, lang)
-        
-        print(s_)
-        
-        prbScore = problemScore[prbid - 1]
-        
-        if prbid == 1:
-            p1 = s_[0][3] * (prbScore + timeRemaining//10)
-            if user.p1 < p1:
-                user = users.query.filter_by(id = uid).update(dict(p1 = p1))
-        elif prbid == 2:
-            p2 = s_[0][3] * (prbScore + timeRemaining//10)
-            if user.p2 < p2:
-                user = users.query.filter_by(id = uid).update(dict(p2 = p2))
-        elif prbid == 3:
-            p3 = s_[0][3] * (prbScore + timeRemaining//10)
-            if user.p3 < p3:
-                user = users.query.filter_by(id = uid).update(dict(p3 = p3))
-        elif prbid == 4:
-            p4 = s_[0][3] * (prbScore + timeRemaining//10)
-            if user.p4 < p4:
-                user = users.query.filter_by(id = uid).update(dict(p4 = p4))
-        elif prbid == 5:
-            p5 = s_[0][3] * (prbScore + timeRemaining//10)
-            if user.p5 < p5:
-                user = users.query.filter_by(id = uid).update(dict(p5 = p5))
-        else:
-            print("ERROR Something Unexpected.")
-
-        user = users.query.filter_by(id = uid).first()
-        score = user.p1 + user.p2 + user.p3 + user.p4 + user.p5
-        user = users.query.filter_by(id = uid).update(dict(score = score))
-
-        p = posts(prbid, filename1, s_[1], uid)
+        p = posts(prbid, filename1, "pending", uid)
         db.session.add(p)
         try:
             db.session.commit()
         except:
             return render_template("error.html", title = "error", message = "Something went wrong!\n in Database")
 
-        post_number += 1
-    """
+        t = threading.Thread(target = submitAnswer, args = [p.pid, file.filename.split(".")[0], str(uid), str(prbid), lang, path1])
+        t.setDaemon(False)
+        t.start()
+
+        """
+        #callCmd = "python checker.py " + file.filename.split(".")[0] + " " + str(uid) + " " + str(prbid) + " " + lang + " " + path1
+        #subprocess.call(callCmd)
+
+        s_ = submitAnswer(file.filename.split(".")[0], str(uid), str(prbid), lang, path1)
+        
+        print(s_)
+        """
         # redirect user to profile page
         return redirect(url_for("submitStatus"))
     else:

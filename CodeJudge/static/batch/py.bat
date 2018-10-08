@@ -8,15 +8,15 @@ break > rte.txt
 python %4<"%1\data\problems\%3\inputs\input.txt">"output.txt" 2>"rte.txt"
 call :filesize "rte.txt"
 if not %size%==0 (
-	echo #RunTimeError
+	echo #RunTimeError#
 	goto :eof
 )
 
 fc "output.txt" "%1\data\problems\%3\outputs\output.txt" > "cm.txt"
 if %errorlevel% == 0 (
-	echo #CorrectAnswer
+	echo #CorrectAnswer#
 ) else (
-	echo #WrongAnswer	
+	echo #WrongAnswer#
 )
 
 exit

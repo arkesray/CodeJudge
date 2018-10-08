@@ -58,4 +58,49 @@ class users(db.Model):
         self.timeAlloted = int(datetime.timedelta(hours = 20).total_seconds())
 
 
+class Compiler:
+
+    """docstring for compiler"""
+    def __init__(self, lang, prbN):
+            self.lang = lang
+            self.prbN = prbN
+            self.runTime = 0
+            self.errorCompilation = False
+            self.errorTLE = False
+            self.errorRTE = False
+            self.errorWA = False
+
+            self.error = False
+            self.error_text = "None"
+            self.compile_percentage = 0
+
+    def compile(self, filelocation, filename):
+            """
+            Compiles and Executes the code
+            TODO: different invokes for proper runtime and partial scoring
+            """
+            if self.lang == "java":
+                invokerCmd = myPath + "static\\batch\\java.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename + " " + filename.split(".")[0]
+                self.runTime = 5
+            if self.lang == "cpp":
+                invokerCmd = myPath + "static\\batch\\cpp.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename
+                self.runTime = 5
+            if self.lang == "py":
+                invokerCmd = myPath + "static\\batch\\py.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename
+                self.runTime = 5
+
+            p = subprocess.Popen( invokerCmd, stdout = subprocess.PIPE )
+            try:
+                stdout,stderr = p.communicate(timeout = self.runTime)
+
+            except subprocess.TimeoutExpired:
+                #p.kill()
+                subprocess.call(['taskkill', '/F', '/T', '/PID', str(p.pid)])
+                stdout = "#TimeLimitExceded"
+            self.error_text = str(stdout)
+            return str(self.error_text)
+    
+    def getLastError(self):
+            return self.error_text
+
 

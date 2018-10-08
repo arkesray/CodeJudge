@@ -8,22 +8,22 @@ break > rte.txt
 javac %4 2> co.txt
 call :filesize "co.txt" 
 if not %size%==0 (
-	echo #CompilationError
+	echo #CompilationError#
 	goto :eof
 )
 
 java %5<"%1\data\problems\%3\inputs\input.txt">"output.txt" 2>"rte.txt"
 call :filesize "rte.txt"
 if not %size%==0 (
-	echo #RunTimeError
+	echo #RunTimeError#
 	goto :eof
 )
 
 fc "output.txt" "%1\data\problems\%3\outputs\output.txt" > "cm.txt"
 if %errorlevel% == 0 (
-	echo #CorrectAnswer
+	echo #CorrectAnswer#
 ) else (
-	echo #WrongAnswer	
+	echo #WrongAnswer#	
 )
 
 exit
