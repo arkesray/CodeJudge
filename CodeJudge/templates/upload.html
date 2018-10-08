@@ -1,0 +1,54 @@
+﻿{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="row">
+	<div class="col-md-6 offset-md-3">
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h2><div class="text-center">Upload</div></h2>
+		</div>
+		<div class="panel-body">
+			<form action="{{url_for('upload')}}" method="post" class="form col-md-12" enctype="multipart/form-data">
+				<div class="form-group ">
+					<strong><label for="inputfile1" class=" control-label">Solution</label></strong>
+					<div>
+						<input type="file" class="form-control" id="solution"  name="solution">
+					</div>
+				</div>
+
+				<div class="form-group">
+					<strong><label for="lan">Select Language (select one):</label></strong>
+					<select class="form-control" id="lang" name="lang">
+						<option value="py">Python</option>
+						<option value="java">Java</option>
+						<option value="cpp">CPP</option>
+					</select>
+				</div>
+
+				<div class="form-group">
+					<strong><label for="prbid">Select Problem Number </label></strong>
+					<select class="form-control" id="prbid" name="prbid">
+						<option>1</option>
+						<option>2</option>
+						<option>3</option>
+						<option>4</option>
+						<option>5</option>
+					</select>
+				</div>
+
+				<div class="form-group">
+					<div class="text-center">
+						<button type="submit" class="btn btn-success">Submit</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+</div>
+
+
+    
+</form>
+{% endblock %}

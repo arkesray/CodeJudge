@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+
+{% block meta %}
+<meta http-equiv="Refresh" content="30">
+{% endblock %}
+
+{% block content %}
+
+<h2 class="text-center">{{ title }}</h2>
+
+<table class="table table-bordered">
+	<thead style="background: black; color: white;">
+		<tr>
+			<th class="text-center">Rank</th>
+			<th class="text-center">User Name</th>
+			<th class="text-center">Score</th>
+		</tr>
+	</thead>
+	<tbody style="background: white;">
+    {% for user in lists %}
+        <tr> 
+            <td class="text-center">{{loop.index}}</td>  
+            <td class="text-center">{{user.name}}</td>
+            <td class="text-center">{{user.score}}</td>
+        </tr>
+    {%endfor%}
+	</tbody>
+
+</table>
+
+
+{% endblock %}
+
+

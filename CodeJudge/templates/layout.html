@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% block meta %}{% endblock %}
+    
+    <link rel="stylesheet" type="text/css" href="/static/content/bootstrap.min.css" />
+    <script src="/static/scripts/bootstrap.min.js"></script>
+    <title>{{ title }}: Codathon {{year}}</title>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark navbar-default navbae-static-top">
+        <div class = "container">
+        <a class="navbar-brand" href="#">CodeJudge</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    {% if session.user_id %}
+
+                    <li class="nav-item ">
+                        <a class="nav-link" href="{{ url_for('profile') }}">My Profile </a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('score') }}">Leaderboard</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('upload')}}">Upload Solution</a></a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('submitStatus')}}">Submit Status</a></a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('logout')}}">Logout</a></a>
+                    </li>
+                    {% else %}
+
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('home')}}">Home</a></a>
+                    </li>
+
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('register')}}">Register</a></a>
+                    </li>
+
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('login')}}">LogIn</a></a>
+                    </li>
+
+
+                    {% endif %} 
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+	<div class="container">
+        {% block content %}{% endblock %}
+    </div>
+	
+	<footer>
+        <p class="text-center">&copy;  {{year}} - A Codathon Project</p>
+    </footer>
+    
+</body>
+</html>
