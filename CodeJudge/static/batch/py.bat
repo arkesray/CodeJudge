@@ -10,13 +10,9 @@ call :filesize "rte.txt"
 if not %size%==0 (
 	echo #RunTimeError#
 	goto :eof
-)
-
-fc "output.txt" "%1\data\problems\%3\outputs\output.txt" > "cm.txt"
-if %errorlevel% == 0 (
-	echo #CorrectAnswer#
 ) else (
-	echo #WrongAnswer#
+	echo #NoErrors#
+	goto :eof
 )
 
 exit

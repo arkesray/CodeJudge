@@ -12,14 +12,16 @@ class posts(db.Model):
     pid = db.Column(db.Integer, primary_key = True)
     ptime = db.Column(db.DateTime)
     prbid = db.Column(db.Integer)
-    sol = db.Column(db.String(200))
+    location = db.Column(db.String(200))
+    lang = db.Column(db.String(10))
     status = db.Column(db.String(40))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id') )
 
-    def __init__(self, prbid, i1, s = "success", user_id = 0):
+    def __init__(self, prbid, l, lang, s = "success", user_id = 0):
         self.ptime = datetime.datetime.now()
         self.prbid = prbid
-        self.sol = i1
+        self.location = l
+        self.lang = lang
         self.status = s
         self.user_id = user_id
 
@@ -58,49 +60,81 @@ class users(db.Model):
         self.timeAlloted = int(datetime.timedelta(hours = 20).total_seconds())
 
 
-class Compiler:
+class Judge:
 
     """docstring for compiler"""
     def __init__(self, lang, prbN):
-            self.lang = lang
-            self.prbN = prbN
-            self.runTime = 0
+        self.lang = lang
+        self.prbN = prbN
+        self.runTime = 2
+        self.stdout = ""
+        self.errorCompilation = True
+        self.errorTLE = True
+        self.errorRTE = True
+        self.errorWA = True
+        self.CA = False
+
+    def complie(self, filelocation, filename):
+        """
+        Compiles the code
+        TODO: different invokes for partial scoring
+        """
+        compilingCmd = myPath + "static\\batch\\" + self.lang + "c.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename + " " + filename.split(".")[0]
+
+        if self.lang == "java" or self.lang == "cpp":
+            p = subprocess.Popen( compilingCmd, stdout = subprocess.PIPE )
+            stdout,stderr = p.communicate()
+            self.stdout = stdout.decode("utf-8")
+            if self.stdout.split("#")[1] == "CompilationSuccess":
+                self.errorCompilation = False
+                return True
+            else:
+                return False
+        else:
             self.errorCompilation = False
-            self.errorTLE = False
-            self.errorRTE = False
-            self.errorWA = False
+            return True
 
-            self.error = False
-            self.error_text = "None"
-            self.compile_percentage = 0
+    
+    def execute(self, filelocation, filename):
 
-    def compile(self, filelocation, filename):
-            """
-            Compiles and Executes the code
-            TODO: different invokes for proper runtime and partial scoring
-            """
-            if self.lang == "java":
-                invokerCmd = myPath + "static\\batch\\java.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename + " " + filename.split(".")[0]
-                self.runTime = 5
-            if self.lang == "cpp":
-                invokerCmd = myPath + "static\\batch\\cpp.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename
-                self.runTime = 5
-            if self.lang == "py":
-                invokerCmd = myPath + "static\\batch\\py.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename
-                self.runTime = 5
+        executeCmd = myPath + "static\\batch\\" + self.lang + ".bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename + " " + filename.split(".")[0]
+        if not self.errorCompilation:
 
-            p = subprocess.Popen( invokerCmd, stdout = subprocess.PIPE )
+            p = subprocess.Popen(executeCmd, stdout = subprocess.PIPE )
             try:
                 stdout,stderr = p.communicate(timeout = self.runTime)
-
+                self.stdout = stdout.decode("utf-8")
             except subprocess.TimeoutExpired:
                 #p.kill()
                 subprocess.call(['taskkill', '/F', '/T', '/PID', str(p.pid)])
-                stdout = "#TimeLimitExceded"
-            self.error_text = str(stdout)
-            return str(self.error_text)
-    
-    def getLastError(self):
-            return self.error_text
+                self.stdout = "#TimeLimitExceded#"
+                return False
+        else:
+            print("Something Wrong! -c\n")
+            return False
+
+        if self.stdout.split("#")[1] != "RunTimeError":
+            self.errorRTE = False
+        if self.stdout.split("#")[1] != "TimeLimitExceded":
+            self.errorTLE = False
+
+        return True
+
+
+    def check(self, filelocation, filename):
+        checkCmd = myPath + "static\\batch\\" + "check.bat" + " " + myPath + " " + filelocation + " " + "p" + self.prbN + " " + filename + " " + filename.split(".")[0]
+        if not self.errorCompilation and not self.errorTLE and not self.errorRTE:
+            p = subprocess.Popen(checkCmd, stdout = subprocess.PIPE )
+            stdout,stderr = p.communicate()
+            self.stdout = stdout.decode("utf-8")
+        else:
+            print("Not Checking! Something Wrong!")
+            return False
+
+        if self.stdout.split("#")[1] == "CorrectAnswer":
+            self.errorWA = False
+            self.CA = True
+
+        return True
 
 

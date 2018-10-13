@@ -1,3 +1,0 @@
-Comparing files output.txt and E:\PROJECTS\CODEJUDGE\CODEJUDGE\\DATA\PROBLEMS\P4\OUTPUTS\OUTPUT.TXT
-FC: no differences encountered
-

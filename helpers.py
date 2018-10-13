@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import session, redirect
-from models import Compiler, db, posts, users
+from models import Judge, db, posts, users
 import os
 
 myPath = os.path.abspath('') + "\\CodeJudge\\"
@@ -18,6 +18,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 ALLOWED_EXTENSIONS = set([ 'c', 'cpp', 'java', 'py'])
 
 def allowed_file(filename):
@@ -29,7 +30,6 @@ def submitAnswer(pid, file_name, uid, prbN, lang, file_path):
     """
     A fucntion to invoke compile methods and update Database
     """
-
     fileLocation = myPath + "data\\users\\" + uid + "\\" + prbN
 
     if not os.path.exists(fileLocation):
@@ -42,10 +42,12 @@ def submitAnswer(pid, file_name, uid, prbN, lang, file_path):
     h.close()
     f.close()
     
-    compiler = Compiler(lang, prbN)
+    code = Judge(lang, prbN)
+    if code.complie( fileLocation, file_name + "." + lang) is True:
+        if code.execute( fileLocation, file_name + "." + lang) is True:  #TODO; problem-language-input specific runtime
+            code.check( fileLocation, file_name + "." + lang)
 
-    pStatus = compiler.compile( fileLocation, file_name + "." + lang)
-    updateScore(pid, uid, int(prbN), lang, str(pStatus.split("#")[1]))
+    updateScore(pid, uid, int(prbN), lang, str(code.stdout.split("#")[1]))
     return
 
 
@@ -56,26 +58,22 @@ def updateScore(pid, uid, prbid, lang, pStatus):
     p = posts.query.filter_by(pid = pid).update(dict(status = pStatus))
     user = users.query.filter_by(id = uid).first()
 
+    score = calculateScore(pStatus)
     if prbid == 1:
-        p1 = calculateScore(pStatus)
-        if user.p1 < p1:
-            u = users.query.filter_by(id = uid).update(dict(p1 = p1))
+        if user.p1 < score:
+            u = users.query.filter_by(id = uid).update(dict(p1 = score))
     elif prbid == 2:
-        p2 = calculateScore(pStatus)
-        if user.p2 < p2:
-            u = users.query.filter_by(id = uid).update(dict(p2 = p2))
+        if user.p2 < score:
+            u = users.query.filter_by(id = uid).update(dict(p2 = score))
     elif prbid == 3:
-        p3 = calculateScore(pStatus)
-        if user.p3 < p3:
-            u = users.query.filter_by(id = uid).update(dict(p3 = p3))
+        if user.p3 < score:
+            u = users.query.filter_by(id = uid).update(dict(p3 = score))
     elif prbid == 4:
-        p4 = calculateScore(pStatus)
-        if user.p4 < p4:
-            u = users.query.filter_by(id = uid).update(dict(p4 = p4))
+        if user.p4 < score:
+            u = users.query.filter_by(id = uid).update(dict(p4 = score))
     elif prbid == 5:
-        p5 = calculateScore(pStatus)
-        if user.p5 < p5:
-            u = users.query.filter_by(id = uid).update(dict(p5 = p5))
+        if user.p5 < score:
+            u = users.query.filter_by(id = uid).update(dict(p5 = score))
     else:
         print("ERROR Something Unexpected.")
 
@@ -93,6 +91,7 @@ def updateScore(pid, uid, prbid, lang, pStatus):
 def calculateScore(pStatus):
     """
     A fucntion to calculate Score for a particualr submission for a problem
+    Implement partial marking here!!!
     """
     if pStatus == "CorrectAnswer":
         return 100

@@ -2,7 +2,7 @@ import os
 import string
 import datetime
 import threading
-from flask import render_template, session, redirect, request, url_for
+from flask import render_template, session, redirect, request, url_for, flash
 from flask_session import Session
 from passlib.apps import custom_app_context as pwd_context
 from tempfile import mkdtemp
@@ -17,8 +17,6 @@ from helpers import login_required, allowed_file, submitAnswer
 
 #globals
 post_number = 1
-problemScore = [1000, 1500, 2000, 2500, 3000]
-
 
 #database creation
 db.create_all()
@@ -90,7 +88,7 @@ def register():
 
   
 
-@app.route('/profile/start',  methods = ["GET","POST"])
+@app.route('/start',  methods = ["GET","POST"])
 @login_required
 def start():
     """Renders the home page."""
@@ -120,13 +118,14 @@ def profile():
         return redirect(url_for('start'))
     timeRemaining = user.timeAlloted - int((datetime.datetime.now() - user.timeStarted).total_seconds())
     if timeRemaining < 1:
+        flash("Timer Ended !! ")
         return redirect(url_for('logout'))
     return render_template('profile.html', name = user.name, title = user.name, time = timeRemaining*1000)
 
 
-@app.route('/profile/submitStatus')
+@app.route('/profile/submissions')
 @login_required
-def submitStatus():
+def submissions():
     
     uid = session["user_id"]
     user = users.query.filter_by(id = uid).first()
@@ -137,9 +136,10 @@ def submitStatus():
     
     timeRemaining = user.timeAlloted - int((datetime.datetime.now() - user.timeStarted).total_seconds())
     if timeRemaining < 1:
+        flash("Timer Ended !! ")
         return redirect(url_for('logout'))
 
-    return render_template('submitStatus.html', title = "Status", message = post_s, year= datetime.datetime.now().year)
+    return render_template('submissions.html', title = "Status", message = post_s, year= datetime.datetime.now().year)
 
 
 @app.route('/profile/score')
@@ -158,10 +158,11 @@ def upload():
     uid = session["user_id"]
     user = users.query.filter_by(id = uid).first()
     if user.started == 0:
-        return redirect('/profile/start')
+        return redirect(url_for('start'))
     
     timeRemaining = user.timeAlloted - int((datetime.datetime.now() - user.timeStarted).total_seconds())
     if timeRemaining < 1:
+        flash("Timer Ended !! ")
         return redirect(url_for('logout'))
     
     elif request.method == "POST":
@@ -171,6 +172,7 @@ def upload():
         # check if the post request has the file part
         if "solution" not in request.files.keys():
             filename1 = "noimage.txt"
+            return render_template("error.html", title = "error", message = "File not found")
         else:
             file = request.files['solution']
         # if user does not select file, browser also
@@ -184,10 +186,10 @@ def upload():
                 file.save(path1)
             else:
                  return render_template("error.html", title = "error", message = "File extension not matched")
-        
+
         post_number += 1
 
-        p = posts(prbid, filename1, "pending", uid)
+        p = posts(prbid, filename1, lang, "pending", uid)
         db.session.add(p)
         try:
             db.session.commit()
@@ -198,16 +200,8 @@ def upload():
         t.setDaemon(False)
         t.start()
 
-        """
-        #callCmd = "python checker.py " + file.filename.split(".")[0] + " " + str(uid) + " " + str(prbid) + " " + lang + " " + path1
-        #subprocess.call(callCmd)
-
-        s_ = submitAnswer(file.filename.split(".")[0], str(uid), str(prbid), lang, path1)
-        
-        print(s_)
-        """
         # redirect user to profile page
-        return redirect(url_for("submitStatus"))
+        return redirect(url_for("submissions"))
     else:
         return render_template( 'upload.html', title='Upload', year= datetime.datetime.now().year)
 
@@ -229,7 +223,7 @@ def p1():
 @login_required
 def p2():
 
-    return render_template("error.html", title = "Problem 2")
+    return render_template("p2.html", title = "Problem 2")
 
 @app.route('/profile/p3')
 @login_required
@@ -247,15 +241,19 @@ def p4():
 @login_required
 def p5():
 
-    return render_template("error.html", title = "Problem 5")
+    return render_template("p5.html", title = "Problem 5")
 
 
 @app.route("/logout")
 def logout():
     """Log user out."""
-
+    for key in list(session):
+        if key != '_permanent':
+            session.pop(key)
+    session['this'] = 'will be added'
+    flash("Logged you out!!")
     # forget any user_id
-    session.clear()
+    #session.clear()
 
     # redirect user to login form
     return redirect(url_for("login"))
