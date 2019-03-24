@@ -1,5 +1,5 @@
 # util/deprecations.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -8,10 +8,12 @@
 """Helpers related to deprecation of functions, methods, classes, other
 functionality."""
 
-from .. import exc
-import warnings
 import re
+import textwrap
+import warnings
+
 from .langhelpers import decorator
+from .. import exc
 
 
 def warn_deprecated(msg, stacklevel=3):
@@ -25,6 +27,9 @@ def warn_pending_deprecation(msg, stacklevel=3):
 def deprecated(version, message=None, add_deprecation_to_docstring=True):
     """Decorates a function and issues a deprecation warning on use.
 
+    :param version:
+      Issue version in the warning.
+
     :param message:
       If provided, issue message in the warning.  A sensible default
       is used if not provided.
@@ -37,8 +42,7 @@ def deprecated(version, message=None, add_deprecation_to_docstring=True):
     """
 
     if add_deprecation_to_docstring:
-        header = ".. deprecated:: %s %s" % \
-            (version, (message or ''))
+        header = ".. deprecated:: %s %s" % (version, (message or ""))
     else:
         header = None
 
@@ -47,13 +51,18 @@ def deprecated(version, message=None, add_deprecation_to_docstring=True):
 
     def decorate(fn):
         return _decorate_with_warning(
-            fn, exc.SADeprecationWarning,
-            message % dict(func=fn.__name__), header)
+            fn,
+            exc.SADeprecationWarning,
+            message % dict(func=fn.__name__),
+            header,
+        )
+
     return decorate
 
 
-def pending_deprecation(version, message=None,
-                        add_deprecation_to_docstring=True):
+def pending_deprecation(
+    version, message=None, add_deprecation_to_docstring=True
+):
     """Decorates a function and issues a pending deprecation warning on use.
 
     :param version:
@@ -71,8 +80,7 @@ def pending_deprecation(version, message=None,
     """
 
     if add_deprecation_to_docstring:
-        header = ".. deprecated:: %s (pending) %s" % \
-            (version, (message or ''))
+        header = ".. deprecated:: %s (pending) %s" % (version, (message or ""))
     else:
         header = None
 
@@ -81,8 +89,12 @@ def pending_deprecation(version, message=None,
 
     def decorate(fn):
         return _decorate_with_warning(
-            fn, exc.SAPendingDeprecationWarning,
-            message % dict(func=fn.__name__), header)
+            fn,
+            exc.SAPendingDeprecationWarning,
+            message % dict(func=fn.__name__),
+            header,
+        )
+
     return decorate
 
 
@@ -92,7 +104,8 @@ def _sanitize_restructured_text(text):
         if type_ in ("func", "meth"):
             name += "()"
         return name
-    return re.sub(r'\:(\w+)\:`~?\.?(.+?)`', repl, text)
+
+    return re.sub(r"\:(\w+)\:`~?\.?(.+?)`", repl, text)
 
 
 def _decorate_with_warning(func, wtype, message, docstring_header=None):
@@ -105,7 +118,7 @@ def _decorate_with_warning(func, wtype, message, docstring_header=None):
         warnings.warn(message, wtype, stacklevel=3)
         return fn(*args, **kwargs)
 
-    doc = func.__doc__ is not None and func.__doc__ or ''
+    doc = func.__doc__ is not None and func.__doc__ or ""
     if docstring_header is not None:
         docstring_header %= dict(func=func.__name__)
 
@@ -114,8 +127,6 @@ def _decorate_with_warning(func, wtype, message, docstring_header=None):
     decorated = warned(func)
     decorated.__doc__ = doc
     return decorated
-
-import textwrap
 
 
 def _dedent_docstring(text):
@@ -132,7 +143,7 @@ def _dedent_docstring(text):
 
 def inject_docstring_text(doctext, injecttext, pos):
     doctext = _dedent_docstring(doctext or "")
-    lines = doctext.split('\n')
+    lines = doctext.split("\n")
     injectlines = textwrap.dedent(injecttext).split("\n")
     if injectlines[0]:
         injectlines.insert(0, "")

@@ -1,5 +1,5 @@
 # orm/events.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -8,17 +8,22 @@
 """ORM event interfaces.
 
 """
-from .. import event, exc, util
-from .base import _mapper_or_none
-import inspect
 import weakref
+
+from . import instrumentation
 from . import interfaces
-from . import mapperlib, instrumentation
-from .session import Session, sessionmaker
-from .scoping import scoped_session
+from . import mapperlib
 from .attributes import QueryableAttribute
+from .base import _mapper_or_none
 from .query import Query
-from sqlalchemy.util.compat import inspect_getargspec
+from .scoping import scoped_session
+from .session import Session
+from .session import sessionmaker
+from .. import event
+from .. import exc
+from .. import util
+from ..util.compat import inspect_getargspec
+
 
 class InstrumentationEvents(event.Events):
     """Events related to class instrumentation events.
@@ -40,13 +45,6 @@ class InstrumentationEvents(event.Events):
     be the subject of these events, when a listener
     is established on a superclass.
 
-    .. versionchanged:: 0.8 - events here will emit based
-       on comparing the incoming class to the type of class
-       passed to :func:`.event.listen`.  Previously, the
-       event would fire for any class unconditionally regardless
-       of what class was sent for listening, despite
-       documentation which stated the contrary.
-
     """
 
     _target_class_doc = "SomeBaseClass"
@@ -61,9 +59,11 @@ class InstrumentationEvents(event.Events):
 
     @classmethod
     def _listen(cls, event_key, propagate=True, **kw):
-        target, identifier, fn = \
-            event_key.dispatch_target, event_key.identifier, \
-            event_key._listen_fn
+        target, identifier, fn = (
+            event_key.dispatch_target,
+            event_key.identifier,
+            event_key._listen_fn,
+        )
 
         def listen(target_cls, *arg):
             listen_cls = target()
@@ -74,16 +74,20 @@ class InstrumentationEvents(event.Events):
 
         def remove(ref):
             key = event.registry._EventKey(
-                None, identifier, listen,
-                instrumentation._instrumentation_factory)
-            getattr(instrumentation._instrumentation_factory.dispatch,
-                    identifier).remove(key)
+                None,
+                identifier,
+                listen,
+                instrumentation._instrumentation_factory,
+            )
+            getattr(
+                instrumentation._instrumentation_factory.dispatch, identifier
+            ).remove(key)
 
         target = weakref.ref(target.class_, remove)
 
-        event_key.\
-            with_dispatch_target(instrumentation._instrumentation_factory).\
-            with_wrapper(listen).base_listen(**kw)
+        event_key.with_dispatch_target(
+            instrumentation._instrumentation_factory
+        ).with_wrapper(listen).base_listen(**kw)
 
     @classmethod
     def _clear(cls):
@@ -143,9 +147,6 @@ class InstanceEvents(event.Events):
     * the :class:`.Mapper` class itself and the :func:`.mapper`
       function indicate listening for all mappers.
 
-    .. versionchanged:: 0.8.0 instance events can be associated with
-       unmapped superclasses of mapped classes.
-
     Instance events are closely related to mapper events, but
     are more specific to the instance and its instrumentation,
     rather than its system of persistence.
@@ -193,21 +194,24 @@ class InstanceEvents(event.Events):
 
     @classmethod
     def _listen(cls, event_key, raw=False, propagate=False, **kw):
-        target, identifier, fn = \
-            event_key.dispatch_target, event_key.identifier, \
-            event_key._listen_fn
+        target, identifier, fn = (
+            event_key.dispatch_target,
+            event_key.identifier,
+            event_key._listen_fn,
+        )
 
         if not raw:
+
             def wrap(state, *arg, **kw):
                 return fn(state.obj(), *arg, **kw)
+
             event_key = event_key.with_wrapper(wrap)
 
         event_key.base_listen(propagate=propagate, **kw)
 
         if propagate:
             for mgr in target.subclass_managers(True):
-                event_key.with_dispatch_target(mgr).base_listen(
-                    propagate=True)
+                event_key.with_dispatch_target(mgr).base_listen(propagate=True)
 
     @classmethod
     def _clear(cls):
@@ -438,8 +442,11 @@ class _EventsHold(event.RefCollection):
 
         @classmethod
         def _listen(cls, event_key, raw=False, propagate=False, **kw):
-            target, identifier, fn = \
-                event_key.dispatch_target, event_key.identifier, event_key.fn
+            target, identifier, fn = (
+                event_key.dispatch_target,
+                event_key.identifier,
+                event_key.fn,
+            )
 
             if target.class_ in target.all_holds:
                 collection = target.all_holds[target.class_]
@@ -458,12 +465,16 @@ class _EventsHold(event.RefCollection):
                     if subject is not None:
                         # we are already going through __subclasses__()
                         # so leave generic propagate flag False
-                        event_key.with_dispatch_target(subject).\
-                            listen(raw=raw, propagate=False, **kw)
+                        event_key.with_dispatch_target(subject).listen(
+                            raw=raw, propagate=False, **kw
+                        )
 
     def remove(self, event_key):
-        target, identifier, fn = \
-            event_key.dispatch_target, event_key.identifier, event_key.fn
+        target, identifier, fn = (
+            event_key.dispatch_target,
+            event_key.identifier,
+            event_key.fn,
+        )
 
         if isinstance(target, _EventsHold):
             collection = target.all_holds[target.class_]
@@ -481,8 +492,9 @@ class _EventsHold(event.RefCollection):
                         # populate(), we rely upon _EventsHold for all event
                         # assignment, instead of using the generic propagate
                         # flag.
-                        event_key.with_dispatch_target(subject).\
-                            listen(raw=raw, propagate=False)
+                        event_key.with_dispatch_target(subject).listen(
+                            raw=raw, propagate=False
+                        )
 
 
 class _InstanceEventsHold(_EventsHold):
@@ -524,9 +536,6 @@ class MapperEvents(event.Events):
     * :class:`.Mapper` objects
     * the :class:`.Mapper` class itself and the :func:`.mapper`
       function indicate listening for all mappers.
-
-    .. versionchanged:: 0.8.0 mapper events can be associated with
-       unmapped superclasses of mapped classes.
 
     Mapper events provide hooks into critical sections of the
     mapper, including those related to object instrumentation,
@@ -592,24 +601,31 @@ class MapperEvents(event.Events):
 
     @classmethod
     def _listen(
-            cls, event_key, raw=False, retval=False, propagate=False, **kw):
-        target, identifier, fn = \
-            event_key.dispatch_target, event_key.identifier, \
-            event_key._listen_fn
+        cls, event_key, raw=False, retval=False, propagate=False, **kw
+    ):
+        target, identifier, fn = (
+            event_key.dispatch_target,
+            event_key.identifier,
+            event_key._listen_fn,
+        )
 
-        if identifier in ("before_configured", "after_configured") and \
-                target is not mapperlib.Mapper:
+        if (
+            identifier in ("before_configured", "after_configured")
+            and target is not mapperlib.Mapper
+        ):
             util.warn(
                 "'before_configured' and 'after_configured' ORM events "
                 "only invoke with the mapper() function or Mapper class "
-                "as the target.")
+                "as the target."
+            )
 
         if not raw or not retval:
             if not raw:
                 meth = getattr(cls, identifier)
                 try:
-                    target_index = \
-                        inspect_getargspec(meth)[0].index('target') - 1
+                    target_index = (
+                        inspect_getargspec(meth)[0].index("target") - 1
+                    )
                 except ValueError:
                     target_index = None
 
@@ -622,12 +638,14 @@ class MapperEvents(event.Events):
                     return interfaces.EXT_CONTINUE
                 else:
                     return fn(*arg, **kw)
+
             event_key = event_key.with_wrapper(wrap)
 
         if propagate:
             for mapper in target.self_and_descendants:
                 event_key.with_dispatch_target(mapper).base_listen(
-                    propagate=True, **kw)
+                    propagate=True, **kw
+                )
         else:
             event_key.base_listen(**kw)
 
@@ -1162,15 +1180,14 @@ class SessionEvents(event.Events):
         if isinstance(target, scoped_session):
 
             target = target.session_factory
-            if not isinstance(target, sessionmaker) and \
-                (
-                    not isinstance(target, type) or
-                    not issubclass(target, Session)
+            if not isinstance(target, sessionmaker) and (
+                not isinstance(target, type) or not issubclass(target, Session)
             ):
                 raise exc.ArgumentError(
                     "Session event listen on a scoped_session "
                     "requires that its creation callable "
-                    "is associated with the Session class.")
+                    "is associated with the Session class."
+                )
 
         if isinstance(target, sessionmaker):
             return target.class_
@@ -1371,8 +1388,6 @@ class SessionEvents(event.Events):
          :class:`.SessionTransaction` for the given :class:`.Session` is
          available via the :attr:`.Session.transaction` attribute.
 
-        .. versionadded:: 0.7.3
-
         """
 
     def before_flush(self, session, flush_context, instances):
@@ -1467,11 +1482,6 @@ class SessionEvents(event.Events):
         This is called before an add, delete or merge causes
         the object to be part of the session.
 
-        .. versionadded:: 0.8.  Note that :meth:`~.SessionEvents.after_attach`
-           now fires off after the item is part of the session.
-           :meth:`.before_attach` is provided for those cases where
-           the item should not yet be part of the session state.
-
         .. seealso::
 
             :meth:`~.SessionEvents.after_attach`
@@ -1504,13 +1514,16 @@ class SessionEvents(event.Events):
 
         """
 
-    @event._legacy_signature("0.9",
-                             ["session", "query", "query_context", "result"],
-                             lambda update_context: (
-                                 update_context.session,
-                                 update_context.query,
-                                 update_context.context,
-                                 update_context.result))
+    @event._legacy_signature(
+        "0.9",
+        ["session", "query", "query_context", "result"],
+        lambda update_context: (
+            update_context.session,
+            update_context.query,
+            update_context.context,
+            update_context.result,
+        ),
+    )
     def after_bulk_update(self, update_context):
         """Execute after a bulk update operation to the session.
 
@@ -1530,13 +1543,16 @@ class SessionEvents(event.Events):
 
         """
 
-    @event._legacy_signature("0.9",
-                             ["session", "query", "query_context", "result"],
-                             lambda delete_context: (
-                                 delete_context.session,
-                                 delete_context.query,
-                                 delete_context.context,
-                                 delete_context.result))
+    @event._legacy_signature(
+        "0.9",
+        ["session", "query", "query_context", "result"],
+        lambda delete_context: (
+            delete_context.session,
+            delete_context.query,
+            delete_context.context,
+            delete_context.result,
+        ),
+    )
     def after_bulk_delete(self, delete_context):
         """Execute after a bulk delete operation to the session.
 
@@ -1796,7 +1812,7 @@ class SessionEvents(event.Events):
 
 
 class AttributeEvents(event.Events):
-    """Define events for object attributes.
+    r"""Define events for object attributes.
 
     These are typically defined on the class-bound descriptor for the
     target class.
@@ -1870,18 +1886,26 @@ class AttributeEvents(event.Events):
             return target
 
     @classmethod
-    def _listen(cls, event_key, active_history=False,
-                raw=False, retval=False,
-                propagate=False):
+    def _listen(
+        cls,
+        event_key,
+        active_history=False,
+        raw=False,
+        retval=False,
+        propagate=False,
+    ):
 
-        target, identifier, fn = \
-            event_key.dispatch_target, event_key.identifier, \
-            event_key._listen_fn
+        target, identifier, fn = (
+            event_key.dispatch_target,
+            event_key.identifier,
+            event_key._listen_fn,
+        )
 
         if active_history:
             target.dispatch._active_history = True
 
         if not raw or not retval:
+
             def wrap(target, *arg):
                 if not raw:
                     target = target.obj()
@@ -1894,6 +1918,7 @@ class AttributeEvents(event.Events):
                     return value
                 else:
                     return fn(target, *arg)
+
             event_key = event_key.with_wrapper(wrap)
 
         event_key.base_listen(propagate=propagate)
@@ -1902,8 +1927,9 @@ class AttributeEvents(event.Events):
             manager = instrumentation.manager_of_class(target.class_)
 
             for mgr in manager.subclass_managers(True):
-                event_key.with_dispatch_target(
-                    mgr[target.key]).base_listen(propagate=True)
+                event_key.with_dispatch_target(mgr[target.key]).base_listen(
+                    propagate=True
+                )
 
     def append(self, target, value, initiator):
         """Receive a collection append event.
@@ -1966,8 +1992,6 @@ class AttributeEvents(event.Events):
                     return _make_value(value)
                 else:
                     return value
-
-
 
         .. versionadded:: 1.2
 
@@ -2036,18 +2060,38 @@ class AttributeEvents(event.Events):
         """Receive a scalar "init" event.
 
         This event is invoked when an uninitialized, unpersisted scalar
-        attribute is accessed.  A value of ``None`` is typically returned
-        in this case; no changes are made to the object's state.
+        attribute is accessed, e.g. read::
 
-        The event handler can alter this behavior in two ways.
-        One is that a value other than ``None`` may be returned.  The other
-        is that the value may be established as part of the object's state,
-        which will also have the effect that it is persisted.
 
-        Typical use is to establish a specific default value of an attribute
-        upon access::
+            x = my_object.some_attribute
+
+        The ORM's default behavior when this occurs for an un-initialized
+        attribute is to return the value ``None``; note this differs from
+        Python's usual behavior of raising ``AttributeError``.    The
+        event here can be used to customize what value is actually returned,
+        with the assumption that the event listener would be mirroring
+        a default generator that is configured on the Core :class:`.Column`
+        object as well.
+
+        Since a default generator on a :class:`.Column` might also produce
+        a changing value such as a timestamp, the
+        :meth:`.AttributeEvents.init_scalar`
+        event handler can also be used to **set** the newly returned value, so
+        that a Core-level default generation function effectively fires off
+        only once, but at the moment the attribute is accessed on the
+        non-persisted object.   Normally, no change to the object's state
+        is made when an uninitialized attribute is accessed (much older
+        SQLAlchemy versions did in fact change the object's state).
+
+        If a default generator on a column returned a particular constant,
+        a handler might be used as follows::
 
             SOME_CONSTANT = 3.1415926
+
+            class MyClass(Base):
+                # ...
+
+                some_attribute = Column(Numeric, default=SOME_CONSTANT)
 
             @event.listens_for(
                 MyClass.some_attribute, "init_scalar",
@@ -2061,11 +2105,14 @@ class AttributeEvents(event.Events):
         features:
 
         * By setting the value ``SOME_CONSTANT`` in the given ``dict_``,
-          we indicate that the value is to be persisted to the database.
-          **The given value is only persisted to the database if we
-          explicitly associate it with the object**.  The ``dict_`` given
-          is the ``__dict__`` element of the mapped object, assuming the
-          default attribute instrumentation system is in place.
+          we indicate that this value is to be persisted to the database.
+          This supersedes the use of ``SOME_CONSTANT`` in the default generator
+          for the :class:`.Column`.  The ``active_column_defaults.py``
+          example given at :ref:`examples_instrumentation` illustrates using
+          the same approach for a changing default, e.g. a timestamp
+          generator.    In this particular example, it is not strictly
+          necessary to do this since ``SOME_CONSTANT`` would be part of the
+          INSERT statement in either case.
 
         * By establishing the ``retval=True`` flag, the value we return
           from the function will be returned by the attribute getter.
@@ -2077,24 +2124,12 @@ class AttributeEvents(event.Events):
           event listener.  Without this flag, an inheriting subclass will
           not use our event handler.
 
-        When we establish the value in the given dictionary, the value will
-        be used in the INSERT statement established by the unit of work.
-        Normally, the default returned value of ``None`` is not established as
-        part of the object, to avoid the issue of mutations occurring to the
-        object in response to a normally passive "get" operation, and also
-        sidesteps the issue of whether or not the :meth:`.AttributeEvents.set`
-        event should be awkwardly fired off during an attribute access
-        operation.  This does not impact the INSERT operation since the
-        ``None`` value matches the value of ``NULL`` that goes into the
-        database in any case; note that ``None`` is skipped during the INSERT
-        to ensure that column and SQL-level default functions can fire off.
-
-        The attribute set event :meth:`.AttributeEvents.set` as well as the
-        related validation feature provided by :obj:`.orm.validates` is
-        **not** invoked when we apply our value to the given ``dict_``.  To
-        have these events to invoke in response to our newly generated
-        value, apply the value to the given object as a normal attribute
-        set operation::
+        In the above example, the attribute set event
+        :meth:`.AttributeEvents.set` as well as the related validation feature
+        provided by :obj:`.orm.validates` is **not** invoked when we apply our
+        value to the given ``dict_``.  To have these events to invoke in
+        response to our newly generated value, apply the value to the given
+        object as a normal attribute set operation::
 
             SOME_CONSTANT = 3.1415926
 
@@ -2110,11 +2145,6 @@ class AttributeEvents(event.Events):
         is "chained" from one listener to the next by passing the value
         returned by the previous listener that specifies ``retval=True``
         as the ``value`` argument of the next listener.
-
-        The :meth:`.AttributeEvents.init_scalar` event may be used to
-        extract values from the default values and/or callables established on
-        mapped :class:`.Column` objects.  See the "active column defaults"
-        example in :ref:`examples_instrumentation` for an example of this.
 
         .. versionadded:: 1.1
 
@@ -2163,18 +2193,18 @@ class AttributeEvents(event.Events):
          be the :class:`.InstanceState` object.
         :param collection: the new collection.  This will always be generated
          from what was specified as
-         :paramref:`.RelationshipProperty.collection_class`, and will always
+         :paramref:`.relationship.collection_class`, and will always
          be empty.
-        :param collection_adpater: the :class:`.CollectionAdapter` that will
+        :param collection_adapter: the :class:`.CollectionAdapter` that will
          mediate internal access to the collection.
 
         .. versionadded:: 1.0.0 the :meth:`.AttributeEvents.init_collection`
            and :meth:`.AttributeEvents.dispose_collection` events supersede
-           the :class:`.collection.linker` hook.
+           the :class:`.orm.collection.linker` hook.
 
         """
 
-    def dispose_collection(self, target, collection, collection_adpater):
+    def dispose_collection(self, target, collection, collection_adapter):
         """Receive a 'collection dispose' event.
 
         This event is triggered for a collection-based attribute when
@@ -2248,15 +2278,91 @@ class QueryEvents(event.Events):
         The event should normally be listened with the ``retval=True``
         parameter set, so that the modified query may be returned.
 
+        .. seealso::
+
+            :meth:`.QueryEvents.before_compile_update`
+
+            :meth:`.QueryEvents.before_compile_delete`
+
+
+        """
+
+    def before_compile_update(self, query, update_context):
+        """Allow modifications to the :class:`.Query` object within
+        :meth:`.Query.update`.
+
+        Like the :meth:`.QueryEvents.before_compile` event, this event
+        should be configured with ``retval=True``, and the modified
+        :class:`.Query` object returned, as in ::
+
+            @event.listens_for(Query, "before_compile_update", retval=True)
+            def no_deleted(query, update_context):
+                for desc in query.column_descriptions:
+                    if desc['type'] is User:
+                        entity = desc['entity']
+                        query = query.filter(entity.deleted == False)
+                return query
+
+        :param query: a :class:`.Query` instance; this is also
+         the ``.query`` attribute of the given "update context"
+         object.
+
+        :param update_context: an "update context" object which is
+         the same kind of object as described in
+         :paramref:`.QueryEvents.after_bulk_update.update_context`.
+
+        .. versionadded:: 1.2.17
+
+        .. seealso::
+
+            :meth:`.QueryEvents.before_compile`
+
+            :meth:`.QueryEvents.before_compile_delete`
+
+
+        """
+
+    def before_compile_delete(self, query, delete_context):
+        """Allow modifications to the :class:`.Query` object within
+        :meth:`.Query.delete`.
+
+        Like the :meth:`.QueryEvents.before_compile` event, this event
+        should be configured with ``retval=True``, and the modified
+        :class:`.Query` object returned, as in ::
+
+            @event.listens_for(Query, "before_compile_delete", retval=True)
+            def no_deleted(query, delete_context):
+                for desc in query.column_descriptions:
+                    if desc['type'] is User:
+                        entity = desc['entity']
+                        query = query.filter(entity.deleted == False)
+                return query
+
+        :param query: a :class:`.Query` instance; this is also
+         the ``.query`` attribute of the given "delete context"
+         object.
+
+        :param delete_context: a "delete context" object which is
+         the same kind of object as described in
+         :paramref:`.QueryEvents.after_bulk_delete.delete_context`.
+
+        .. versionadded:: 1.2.17
+
+        .. seealso::
+
+            :meth:`.QueryEvents.before_compile`
+
+            :meth:`.QueryEvents.before_compile_update`
+
 
         """
 
     @classmethod
-    def _listen(
-            cls, event_key, retval=False, **kw):
+    def _listen(cls, event_key, retval=False, **kw):
         fn = event_key._listen_fn
 
         if not retval:
+
             def wrap(*arg, **kw):
                 if not retval:
                     query = arg[0]
@@ -2264,6 +2370,7 @@ class QueryEvents(event.Events):
                     return query
                 else:
                     return fn(*arg, **kw)
+
             event_key = event_key.with_wrapper(wrap)
 
         event_key.base_listen(**kw)

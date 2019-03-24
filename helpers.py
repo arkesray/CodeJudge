@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import session, redirect
-from models import Judge, db, posts, users
+from models import Judge, Problem, db, posts, users
 import os
 
 myPath = os.path.abspath('') + "\\CodeJudge\\"
@@ -26,6 +26,12 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+NUMBER_OF_PROBLEMS = len(os.listdir(myPath + "data\\Problems"))
+problems = []
+for i in range(NUMBER_OF_PROBLEMS):
+    problems.append(Problem(i+1, 100))
+
+
 def submitAnswer(pid, file_name, uid, prbN, lang, file_path):
     """
     A fucntion to invoke compile methods and update Database
@@ -42,7 +48,7 @@ def submitAnswer(pid, file_name, uid, prbN, lang, file_path):
     h.close()
     f.close()
     
-    code = Judge(lang, prbN)
+    code = Judge(lang, problems[prbN - 1])
     if code.complie( fileLocation, file_name + "." + lang) is True:
         if code.execute( fileLocation, file_name + "." + lang) is True:  #TODO; problem-language-input specific runtime
             code.check( fileLocation, file_name + "." + lang)

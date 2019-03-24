@@ -29,11 +29,9 @@
 				<div class="form-group">
 					<strong><label for="prbid">Select Problem Number </label></strong>
 					<select class="form-control" id="prbid" name="prbid">
-						<option>1</option>
-						<option>2</option>
-						<option>3</option>
-						<option>4</option>
-						<option>5</option>
+						{% for i in range(problems)%}
+						<option>{{i+1}}</option>
+						{%endfor%}
 					</select>
 				</div>
 

@@ -4,7 +4,7 @@ from tempfile import mkdtemp
 UPLOAD_FOLDER = os.path.abspath("") + "\\CodeJudge\\data\\uploads"
 SECRET_KEY = "Test"
 
-SQLALCHEMY_DATABASE_URI = 'sqlite:///static/database/database.db'
+SQLALCHEMY_DATABASE_URI = 'sqlite:///database/database.db'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # configure session to use filesystem (instead of signed cookies)

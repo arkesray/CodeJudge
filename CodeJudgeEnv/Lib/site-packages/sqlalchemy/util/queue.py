@@ -1,5 +1,5 @@
 # util/queue.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -20,10 +20,11 @@ condition.
 
 from collections import deque
 from time import time as _time
+
 from .compat import threading
 
 
-__all__ = ['Empty', 'Full', 'Queue']
+__all__ = ["Empty", "Full", "Queue"]
 
 
 class Empty(Exception):

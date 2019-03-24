@@ -18,13 +18,11 @@
                 <h2><div class="text-center"><strong>{{ name }}</strong></div></h2>
             </div>
             
-            <div class="pane;-body">
+            <div class="panel-body">
                 <ul class="list-group">
-                    <li class="list-group-item"><a href="{{ url_for('p1') }}" class="btn btn-light col-sm-12">Problem 1</a></li>
-                    <li class="list-group-item"><a href="{{ url_for('p2') }}" class="btn btn-light col-sm-12">Problem 2</a></li>
-                    <li class="list-group-item"><a href="{{ url_for('p3') }}" class="btn btn-light col-sm-12">Problem 3</a></li>
-                    <li class="list-group-item"><a href="{{ url_for('p4') }}" class="btn btn-light col-sm-12">Problem 4</a></li>
-                    <li class="list-group-item"> <a href="{{ url_for('p4') }}" class="btn btn-light col-sm-12">Problem 5</a></li>
+                    {% for i in range(problems) %}
+                    <li class="list-group-item"><a href="{{ url_for('p', number=i+1) }}" class="btn btn-light col-sm-12">Problem {{i + 1}}</a></li>
+                    {%endfor%}
                 </ul>
             </div>
         </div>
@@ -47,6 +45,11 @@
 
 <script type="text/javascript">
     
+    // Back button Solution
+    if(performance.navigation.type == 2){
+   location.reload(true);
+    }
+
     // Set the date we're counting down to
     var countDownDate = {{time}};
     var timeMs = countDownDate;

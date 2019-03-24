@@ -63,16 +63,24 @@ class users(db.Model):
 class Judge:
 
     """docstring for compiler"""
-    def __init__(self, lang, prbN):
+    def __init__(self, lang, problem):
         self.lang = lang
-        self.prbN = prbN
-        self.runTime = 2
+        self.prbN = problem.problemId
+        self.runTime = getRunTime(prbN, problem)
         self.stdout = ""
         self.errorCompilation = True
         self.errorTLE = True
         self.errorRTE = True
         self.errorWA = True
         self.CA = False
+    
+    def getRunTime(self, problem):
+        if self.lang == "py":
+            return problem.pyTLE
+        elif self.lang == "java":
+            return problem.javaTLE
+        elif self.lang == "cpp":
+            return problem.cppTLE
 
     def complie(self, filelocation, filename):
         """
@@ -136,5 +144,17 @@ class Judge:
             self.CA = True
 
         return True
+
+
+class Problem:
+
+    def __init__(self, pid, score, pyTLE = 5, cppTLE = 2, javaTLE = 3, TC = 1):
+        self.problemId = pid
+        self.score = score
+        self.pyTLE = pyTLE
+        self.cppTLE = cppTLE
+        self.javaTLE = javaTLE
+        self.testCases = TC
+        
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # testing/runner.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -30,9 +30,9 @@ SQLAlchemy itself is possible.
 
 """
 
-from .plugin.noseplugin import NoseSQLAlchemy
-
 import nose
+
+from .plugin.noseplugin import NoseSQLAlchemy
 
 
 def main():
@@ -47,4 +47,4 @@ def setup_py_test():
     to nose.
 
     """
-    nose.main(addplugins=[NoseSQLAlchemy()], argv=['runner'])
+    nose.main(addplugins=[NoseSQLAlchemy()], argv=["runner"])

@@ -1,7 +1,9 @@
 import os
 import string
 import datetime
+import time
 import threading
+
 from flask import render_template, session, redirect, request, url_for, flash
 from flask_session import Session
 from passlib.apps import custom_app_context as pwd_context
@@ -12,7 +14,7 @@ from flask_sqlalchemy import SQLAlchemy
 from CodeJudge import app
 
 from models import users, posts, db
-from helpers import login_required, allowed_file, submitAnswer
+from helpers import login_required, allowed_file, submitAnswer, NUMBER_OF_PROBLEMS
 
 
 #globals
@@ -21,10 +23,8 @@ post_number = 1
 #database creation
 db.create_all()
 
-
 #using Session for each user
 Session(app)
-
 
 
 @app.route('/')
@@ -120,7 +120,7 @@ def profile():
     if timeRemaining < 1:
         flash("Timer Ended !! ")
         return redirect(url_for('logout'))
-    return render_template('profile.html', name = user.name, title = user.name, time = timeRemaining*1000)
+    return render_template('profile.html', name = user.name, title = user.name, problems = NUMBER_OF_PROBLEMS, time = timeRemaining*1000)
 
 
 @app.route('/profile/submissions')
@@ -203,7 +203,7 @@ def upload():
         # redirect user to profile page
         return redirect(url_for("submissions"))
     else:
-        return render_template( 'upload.html', title='Upload', year= datetime.datetime.now().year)
+        return render_template( 'upload.html', title='Upload', problems = NUMBER_OF_PROBLEMS, year = datetime.datetime.now().year)
 
 
 @app.route('/error')
@@ -213,35 +213,15 @@ def error():
     return render_template("error.html")
 
 
-@app.route('/profile/p1')
+@app.route('/profile/p/<int:number>')
 @login_required
-def p1():
+def p(number):
+    if number > NUMBER_OF_PROBLEMS:
+        return render_template("error.html", title = "error", message = "Problem doesn't exist")
+        
+    page = "p" + str(number) + ".html"
 
-    return render_template("p1.html", title = "Problem 1")
-
-@app.route('/profile/p2')
-@login_required
-def p2():
-
-    return render_template("p2.html", title = "Problem 2")
-
-@app.route('/profile/p3')
-@login_required
-def p3():
-
-    return render_template("p3.html", title = "Problem 3")
-
-@app.route('/profile/p4')
-@login_required
-def p4():
-
-    return render_template("p4.html", title = "Problem 4")
-
-@app.route('/profile/p5')
-@login_required
-def p5():
-
-    return render_template("p5.html", title = "Problem 5")
+    return render_template(page, title = "Problem " + str(number))
 
 
 @app.route("/logout")

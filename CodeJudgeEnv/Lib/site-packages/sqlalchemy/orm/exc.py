@@ -1,12 +1,13 @@
 # orm/exc.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: http://www.opensource.org/licenses/mit-license.php
 
 """SQLAlchemy ORM exceptions."""
-from .. import exc as sa_exc, util
+from .. import exc as sa_exc
+from .. import util
 
 NO_STATE = (AttributeError, KeyError)
 """Exception types that may be raised by instrumentation implementations."""
@@ -34,9 +35,8 @@ class StaleDataError(sa_exc.SQLAlchemyError):
       cannot be made if the new parent was really the most
       recent "parent".
 
-      .. versionadded:: 0.7.4
-
     """
+
 
 ConcurrentModificationError = StaleDataError
 
@@ -72,16 +72,19 @@ class UnmappedInstanceError(UnmappedError):
             try:
                 base.class_mapper(type(obj))
                 name = _safe_cls_name(type(obj))
-                msg = ("Class %r is mapped, but this instance lacks "
-                       "instrumentation.  This occurs when the instance "
-                       "is created before sqlalchemy.orm.mapper(%s) "
-                       "was called." % (name, name))
+                msg = (
+                    "Class %r is mapped, but this instance lacks "
+                    "instrumentation.  This occurs when the instance "
+                    "is created before sqlalchemy.orm.mapper(%s) "
+                    "was called." % (name, name)
+                )
             except UnmappedClassError:
                 msg = _default_unmapped(type(obj))
                 if isinstance(obj, type):
                     msg += (
-                        '; was a class (%s) supplied where an instance was '
-                        'required?' % _safe_cls_name(obj))
+                        "; was a class (%s) supplied where an instance was "
+                        "required?" % _safe_cls_name(obj)
+                    )
         UnmappedError.__init__(self, msg)
 
     def __reduce__(self):
@@ -119,11 +122,14 @@ class ObjectDeletedError(sa_exc.InvalidRequestError):
     object.
 
     """
+
     @util.dependencies("sqlalchemy.orm.base")
     def __init__(self, base, state, msg=None):
         if not msg:
-            msg = "Instance '%s' has been deleted, or its "\
+            msg = (
+                "Instance '%s' has been deleted, or its "
                 "row is otherwise not present." % base.state_str(state)
+            )
 
         sa_exc.InvalidRequestError.__init__(self, msg)
 
@@ -145,9 +151,9 @@ class MultipleResultsFound(sa_exc.InvalidRequestError):
 
 def _safe_cls_name(cls):
     try:
-        cls_name = '.'.join((cls.__module__, cls.__name__))
+        cls_name = ".".join((cls.__module__, cls.__name__))
     except AttributeError:
-        cls_name = getattr(cls, '__name__', None)
+        cls_name = getattr(cls, "__name__", None)
         if cls_name is None:
             cls_name = repr(cls)
     return cls_name

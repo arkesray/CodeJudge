@@ -1,5 +1,5 @@
 # sqlalchemy/naming.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -10,16 +10,25 @@
 
 """
 
-from .schema import Constraint, ForeignKeyConstraint, PrimaryKeyConstraint, \
-    UniqueConstraint, CheckConstraint, Index, Table, Column
-from .. import event, events
-from .. import exc
-from .elements import _truncated_label, _defer_name, _defer_none_name, conv
 import re
+
+from .elements import _defer_name
+from .elements import _defer_none_name
+from .elements import conv
+from .schema import CheckConstraint
+from .schema import Column
+from .schema import Constraint
+from .schema import ForeignKeyConstraint
+from .schema import Index
+from .schema import PrimaryKeyConstraint
+from .schema import Table
+from .schema import UniqueConstraint
+from .. import event
+from .. import events  # noqa
+from .. import exc
 
 
 class ConventionDict(object):
-
     def __init__(self, const, table, convention):
         self.const = const
         self._is_fk = isinstance(const, ForeignKeyConstraint)
@@ -75,8 +84,8 @@ class ConventionDict(object):
     def __getitem__(self, key):
         if key in self.convention:
             return self.convention[key](self.const, self.table)
-        elif hasattr(self, '_key_%s' % key):
-            return getattr(self, '_key_%s' % key)()
+        elif hasattr(self, "_key_%s" % key):
+            return getattr(self, "_key_%s" % key)()
         else:
             col_template = re.match(r".*_?column_(\d+)_.+", key)
             if col_template:
@@ -87,12 +96,13 @@ class ConventionDict(object):
                     return getattr(self, attr)(idx)
         raise KeyError(key)
 
+
 _prefix_dict = {
     Index: "ix",
     PrimaryKeyConstraint: "pk",
     CheckConstraint: "ck",
     UniqueConstraint: "uq",
-    ForeignKeyConstraint: "fk"
+    ForeignKeyConstraint: "fk",
 }
 
 
@@ -113,15 +123,18 @@ def _constraint_name_for_table(const, table):
 
     if isinstance(const.name, conv):
         return const.name
-    elif convention is not None and \
-        not isinstance(const.name, conv) and \
-            (
-            const.name is None or
-            "constraint_name" in convention or
-            isinstance(const.name, _defer_name)):
+    elif (
+        convention is not None
+        and not isinstance(const.name, conv)
+        and (
+            const.name is None
+            or "constraint_name" in convention
+            or isinstance(const.name, _defer_name)
+        )
+    ):
         return conv(
-            convention % ConventionDict(const, table,
-                                        metadata.naming_convention)
+            convention
+            % ConventionDict(const, table, metadata.naming_convention)
         )
     elif isinstance(convention, _defer_none_name):
         return None
@@ -134,9 +147,11 @@ def _constraint_name(const, table):
         # for column-attached constraint, set another event
         # to link the column attached to the table as this constraint
         # associated with the table.
-        event.listen(table, "after_parent_attach",
-                     lambda col, table: _constraint_name(const, table)
-                     )
+        event.listen(
+            table,
+            "after_parent_attach",
+            lambda col, table: _constraint_name(const, table),
+        )
     elif isinstance(table, Table):
         if isinstance(const.name, (conv, _defer_name)):
             return

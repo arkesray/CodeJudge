@@ -1,5 +1,5 @@
 # engine/__init__.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -51,48 +51,33 @@ url.py
     within a URL.
 """
 
-from .interfaces import (
-    Connectable,
-    CreateEnginePlugin,
-    Dialect,
-    ExecutionContext,
-    ExceptionContext,
-
-    # backwards compat
-    Compiled,
-    TypeCompiler
-)
-
-from .base import (
-    Connection,
-    Engine,
-    NestedTransaction,
-    RootTransaction,
-    Transaction,
-    TwoPhaseTransaction,
-)
-
-from .result import (
-    BaseRowProxy,
-    BufferedColumnResultProxy,
-    BufferedColumnRow,
-    BufferedRowResultProxy,
-    FullyBufferedResultProxy,
-    ResultProxy,
-    RowProxy,
-)
-
-from .util import (
-    connection_memoize
-)
+from . import strategies
+from . import util  # noqa
+from .base import Connection  # noqa
+from .base import Engine  # noqa
+from .base import NestedTransaction  # noqa
+from .base import RootTransaction  # noqa
+from .base import Transaction  # noqa
+from .base import TwoPhaseTransaction  # noqa
+from .interfaces import Compiled  # noqa
+from .interfaces import Connectable  # noqa
+from .interfaces import CreateEnginePlugin  # noqa
+from .interfaces import Dialect  # noqa
+from .interfaces import ExceptionContext  # noqa
+from .interfaces import ExecutionContext  # noqa
+from .interfaces import TypeCompiler  # noqa
+from .result import BaseRowProxy  # noqa
+from .result import BufferedColumnResultProxy  # noqa
+from .result import BufferedColumnRow  # noqa
+from .result import BufferedRowResultProxy  # noqa
+from .result import FullyBufferedResultProxy  # noqa
+from .result import ResultProxy  # noqa
+from .result import RowProxy  # noqa
+from .util import connection_memoize  # noqa
+from ..sql import ddl  # noqa
 
 
-from . import util, strategies
-
-# backwards compat
-from ..sql import ddl
-
-default_strategy = 'plain'
+default_strategy = "plain"
 
 
 def create_engine(*args, **kwargs):
@@ -147,29 +132,50 @@ def create_engine(*args, **kwargs):
        will match in a case-insensitive fashion, that is,
        ``row['SomeColumn']``.
 
-       .. versionchanged:: 0.8
-           By default, result row names match case-sensitively.
-           In version 0.7 and prior, all matches were case-insensitive.
-
     :param connect_args: a dictionary of options which will be
         passed directly to the DBAPI's ``connect()`` method as
         additional keyword arguments.  See the example
         at :ref:`custom_dbapi_args`.
 
-    :param convert_unicode=False: if set to True, sets
-        the default behavior of ``convert_unicode`` on the
-        :class:`.String` type to ``True``, regardless
-        of a setting of ``False`` on an individual
-        :class:`.String` type, thus causing all :class:`.String`
-        -based columns
-        to accommodate Python ``unicode`` objects.  This flag
-        is useful as an engine-wide setting when using a
-        DBAPI that does not natively support Python
-        ``unicode`` objects and raises an error when
-        one is received (such as pyodbc with FreeTDS).
+    :param convert_unicode=False: if set to True, causes
+        all :class:`.String` datatypes to act as though the
+        :paramref:`.String.convert_unicode` flag has been set to ``True``,
+        regardless of a setting of ``False`` on an individual :class:`.String`
+        type.  This has the effect of causing all :class:`.String` -based
+        columns to accommodate Python Unicode objects directly as though the
+        datatype were the :class:`.Unicode` type.
 
-        See :class:`.String` for further details on
-        what this flag indicates.
+        .. note::
+
+            SQLAlchemy's unicode-conversion flags and features only apply
+            to Python 2; in Python 3, all string objects are Unicode objects.
+            For this reason, as well as the fact that virtually all modern
+            DBAPIs now support Unicode natively even under Python 2,
+            the :paramref:`.Engine.convert_unicode` flag is inherently a
+            legacy feature.
+
+        .. note::
+
+            This flag does **not** imply that SQLAlchemy's unicode-conversion
+            services will be used, as all modern DBAPIs already handle
+            unicode natively; in most cases it only indicates that the
+            :class:`.String` datatype will return Python unicode objects,
+            rather than plain strings.   The :class:`.String` datatype itself
+            has additional options to force the usage of SQLAlchemy's unicode
+            converters.
+
+        .. note::
+
+            This flag does **not** impact "raw" SQL statements that have no
+            typing information set up; that is, if the :class:`.String`
+            datatype is not used, no unicode behavior is implied.
+
+        .. seealso::
+
+            :paramref:`.String.convert_unicode` - the flag local to the
+            :class:`.String` datatype has additional options
+            which can force unicode handling on a per-type basis.
+
 
     :param creator: a callable which returns a DBAPI connection.
         This creation function will be passed to the underlying
@@ -276,8 +282,8 @@ def create_engine(*args, **kwargs):
         Behavior here varies per backend, and
         individual dialects should be consulted directly.
 
-        Note that the isolation level can also be set on a per-:class:`.Connection`
-        basis as well, using the
+        Note that the isolation level can also be set on a
+        per-:class:`.Connection` basis as well, using the
         :paramref:`.Connection.execution_options.isolation_level`
         feature.
 
@@ -386,13 +392,14 @@ def create_engine(*args, **kwargs):
 
             :ref:`pool_setting_recycle`
 
-    :param pool_reset_on_return='rollback': set the "reset on return"
-        behavior of the pool, which is whether ``rollback()``,
-        ``commit()``, or nothing is called upon connections
-        being returned to the pool.  See the docstring for
-        ``reset_on_return`` at :class:`.Pool`.
+    :param pool_reset_on_return='rollback': set the
+        :paramref:`.Pool.reset_on_return` parameter of the underlying
+        :class:`.Pool` object, which can be set to the values
+        ``"rollback"``, ``"commit"``, or ``None``.
 
-        .. versionadded:: 0.7.6
+        .. seealso::
+
+            :paramref:`.Pool.reset_on_return`
 
     :param pool_timeout=30: number of seconds to wait before giving
         up on getting a connection from the pool. This is only used
@@ -417,14 +424,14 @@ def create_engine(*args, **kwargs):
         ``(sql, *multiparams, **params)``, to which the ``mock`` strategy will
         dispatch all statement execution. Used only by ``strategy='mock'``.
 
-    """
+    """  # noqa
 
-    strategy = kwargs.pop('strategy', default_strategy)
+    strategy = kwargs.pop("strategy", default_strategy)
     strategy = strategies.strategies[strategy]
     return strategy.create(*args, **kwargs)
 
 
-def engine_from_config(configuration, prefix='sqlalchemy.', **kwargs):
+def engine_from_config(configuration, prefix="sqlalchemy.", **kwargs):
     """Create a new Engine instance using a configuration dictionary.
 
     The dictionary is typically produced from a config file.
@@ -456,16 +463,15 @@ def engine_from_config(configuration, prefix='sqlalchemy.', **kwargs):
 
     """
 
-    options = dict((key[len(prefix):], configuration[key])
-                   for key in configuration
-                   if key.startswith(prefix))
-    options['_coerce_config'] = True
+    options = dict(
+        (key[len(prefix) :], configuration[key])
+        for key in configuration
+        if key.startswith(prefix)
+    )
+    options["_coerce_config"] = True
     options.update(kwargs)
-    url = options.pop('url')
+    url = options.pop("url")
     return create_engine(url, **options)
 
 
-__all__ = (
-    'create_engine',
-    'engine_from_config',
-)
+__all__ = ("create_engine", "engine_from_config")

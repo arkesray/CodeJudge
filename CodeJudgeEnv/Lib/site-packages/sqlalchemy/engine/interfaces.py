@@ -1,5 +1,5 @@
 # engine/interfaces.py
-# Copyright (C) 2005-2018 the SQLAlchemy authors and contributors
+# Copyright (C) 2005-2019 the SQLAlchemy authors and contributors
 # <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
@@ -8,9 +8,8 @@
 """Define core interfaces used by the engine system."""
 
 from .. import util
-
-# backwards compat
-from ..sql.compiler import Compiled, TypeCompiler
+from ..sql.compiler import Compiled  # noqa
+from ..sql.compiler import TypeCompiler  # noqa
 
 
 class Dialect(object):
@@ -198,7 +197,8 @@ class Dialect(object):
         pass
 
     def reflecttable(
-            self, connection, table, include_columns, exclude_columns):
+        self, connection, table, include_columns, exclude_columns
+    ):
         """Load table description from the database.
 
         Given a :class:`.Connection` and a
@@ -254,11 +254,11 @@ class Dialect(object):
     def get_primary_keys(self, connection, table_name, schema=None, **kw):
         """Return information about primary keys in `table_name`.
 
+        .. deprecated:: 0.8
 
-        Deprecated.  This method is only called by the default
-        implementation of :meth:`.Dialect.get_pk_constraint`.  Dialects should
-        instead implement the :meth:`.Dialect.get_pk_constraint` method
-        directly.
+            The :meth:`.Dialect.get_primary_keys` method is deprecated and
+            will be removed in a future release.   Please refer to the
+            :meth:`.Dialect.get_pk_constraint` method.
 
         """
 
@@ -367,7 +367,8 @@ class Dialect(object):
         raise NotImplementedError()
 
     def get_unique_constraints(
-            self, connection, table_name, schema=None, **kw):
+        self, connection, table_name, schema=None, **kw
+    ):
         r"""Return information about unique constraints in `table_name`.
 
         Given a string `table_name` and an optional string `schema`, return
@@ -389,8 +390,7 @@ class Dialect(object):
 
         raise NotImplementedError()
 
-    def get_check_constraints(
-            self, connection, table_name, schema=None, **kw):
+    def get_check_constraints(self, connection, table_name, schema=None, **kw):
         r"""Return information about check constraints in `table_name`.
 
         Given a string `table_name` and an optional string `schema`, return
@@ -412,8 +412,7 @@ class Dialect(object):
 
         raise NotImplementedError()
 
-    def get_table_comment(
-            self, connection, table_name, schema=None, **kw):
+    def get_table_comment(self, connection, table_name, schema=None, **kw):
         r"""Return the "comment" for the table identified by `table_name`.
 
         Given a string `table_name` and an optional string `schema`, return
@@ -548,8 +547,6 @@ class Dialect(object):
         detached from the pool, or is being returned beyond the normal
         capacity of the pool.
 
-        .. versionadded:: 0.8
-
         """
 
         raise NotImplementedError()
@@ -613,8 +610,9 @@ class Dialect(object):
 
         raise NotImplementedError()
 
-    def do_rollback_twophase(self, connection, xid, is_prepared=True,
-                             recover=False):
+    def do_rollback_twophase(
+        self, connection, xid, is_prepared=True, recover=False
+    ):
         """Rollback a two phase transaction on the given connection.
 
         :param connection: a :class:`.Connection`.
@@ -627,8 +625,9 @@ class Dialect(object):
 
         raise NotImplementedError()
 
-    def do_commit_twophase(self, connection, xid, is_prepared=True,
-                           recover=False):
+    def do_commit_twophase(
+        self, connection, xid, is_prepared=True, recover=False
+    ):
         """Commit a two phase transaction on the given connection.
 
 
@@ -664,8 +663,9 @@ class Dialect(object):
 
         raise NotImplementedError()
 
-    def do_execute_no_params(self, cursor, statement, parameters,
-                             context=None):
+    def do_execute_no_params(
+        self, cursor, statement, parameters, context=None
+    ):
         """Provide an implementation of ``cursor.execute(statement)``.
 
         The parameter collection should not be sent.
@@ -899,8 +899,9 @@ class CreateEnginePlugin(object):
     .. versionadded:: 1.1
 
     """
+
     def __init__(self, url, kwargs):
-        """Contruct a new :class:`.CreateEnginePlugin`.
+        """Construct a new :class:`.CreateEnginePlugin`.
 
         The plugin object is instantiated individually for each call
         to :func:`.create_engine`.  A single :class:`.Engine` will be
@@ -1129,39 +1130,45 @@ class Connectable(object):
 
         raise NotImplementedError()
 
-    @util.deprecated("0.7",
-                     "Use the create() method on the given schema "
-                     "object directly, i.e. :meth:`.Table.create`, "
-                     ":meth:`.Index.create`, :meth:`.MetaData.create_all`")
+    @util.deprecated(
+        "0.7",
+        "The :meth:`.Connectable.create` method is deprecated and will be "
+        "removed in a future release.  Please use the ``.create()`` method "
+        "on specific schema objects to emit DDL sequences, including "
+        ":meth:`.Table.create`, :meth:`.Index.create`, and "
+        ":meth:`.MetaData.create_all`."
+    )
     def create(self, entity, **kwargs):
         """Emit CREATE statements for the given schema entity.
         """
 
         raise NotImplementedError()
 
-    @util.deprecated("0.7",
-                     "Use the drop() method on the given schema "
-                     "object directly, i.e. :meth:`.Table.drop`, "
-                     ":meth:`.Index.drop`, :meth:`.MetaData.drop_all`")
+    @util.deprecated(
+        "0.7",
+        "The :meth:`.Connectable.drop` method is deprecated and will be "
+        "removed in a future release.  Please use the ``.drop()`` method "
+        "on specific schema objects to emit DDL sequences, including "
+        ":meth:`.Table.drop`, :meth:`.Index.drop`, and "
+        ":meth:`.MetaData.drop_all`.")
     def drop(self, entity, **kwargs):
         """Emit DROP statements for the given schema entity.
         """
 
         raise NotImplementedError()
 
-    def execute(self, object, *multiparams, **params):
+    def execute(self, object_, *multiparams, **params):
         """Executes the given construct and returns a :class:`.ResultProxy`."""
         raise NotImplementedError()
 
-    def scalar(self, object, *multiparams, **params):
+    def scalar(self, object_, *multiparams, **params):
         """Executes and returns the first column of the first row.
 
         The underlying cursor is closed after execution.
         """
         raise NotImplementedError()
 
-    def _run_visitor(self, visitorcallable, element,
-                     **kwargs):
+    def _run_visitor(self, visitorcallable, element, **kwargs):
         raise NotImplementedError()
 
     def _execute_clauseelement(self, elem, multiparams=None, params=None):

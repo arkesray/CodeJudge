@@ -1,11 +1,19 @@
-#include <iostream>
+   #include <iostream>
+   using std::cout;
+   using std::endl;
 
-using namespace std;
+   void print(int a, int b)
+   {
+	int g = b/a;
+   cout << "Hello"<<a<< endl;
 
-int main()
-{
-	int a;
-	cin>>a;
-	cout<<"Hello"<<a<<endl;
-return 0;
-}
+   }
+
+   int main()
+   {
+      int x, y;
+y=0;
+      std::cin>>x;
+      print(x,y);
+      return 0;
+   }
