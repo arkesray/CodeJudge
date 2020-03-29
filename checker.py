@@ -4,6 +4,27 @@ import subprocess
 
 myPath = os.path.abspath('') + "\\CodeJudge\\"
 
+#testing
+
+"""
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, DateTime, create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+engine = create_engine('sqlite:///CodeJudge//database//database.db', convert_unicode=True)
+db_session = scoped_session(sessionmaker(autocommit=False,autoflush=False,bind=engine))
+
+Base = declarative_base()
+
+for ele in e:
+    N = ele.numberOfProblems
+    attr_dict = {'__tablename__': ele.name, 'userId': Column(Integer, primary_key=True), 'started': Column(Integer), 'startTime': Column(DateTime)}
+    for n in range(N):
+        attr_dict['p' + str(n +1)] = Column(Integer)
+    Test = type('Test', (Base,), attr_dict)
+Base.metadata.create_all(engine)
+"""
+
 class Compiler:
 
 	"""docstring for compiler"""

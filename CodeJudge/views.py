@@ -13,18 +13,26 @@ from flask_sqlalchemy import SQLAlchemy
 
 from CodeJudge import app
 
-from models import users, posts, db
-from helpers import login_required, allowed_file, submitAnswer, NUMBER_OF_PROBLEMS
+from models import users, posts, events, db, Problem
+from helpers import login_required, allowed_file, submitAnswer, getProblemList, eventTablesNames
 
 
 #globals
 post_number = 1
 
-#database creation
-db.create_all()
-
 #using Session for each user
 Session(app)
+
+"""
+    if user.started == 0:
+        return redirect(url_for('start'))
+    timeRemaining = user.timeAlloted - int((datetime.datetime.now() - user.timeStarted).total_seconds())
+    if timeRemaining < 1:
+        flash("Timer Ended !! ")
+        return redirect(url_for('logout'))
+"""
+
+db.create_all()
 
 
 @app.route('/')
@@ -51,7 +59,7 @@ def login():
             return render_template("error.html", title = "error", message = "Incorrect password")
         else:
             session['user_id'] = user.id
-            return redirect(url_for('start'))
+            return redirect(url_for('profile'))
     else:
         return render_template( 'login.html', title = 'Log In', year=datetime.datetime.now().year)
 
@@ -70,57 +78,31 @@ def register():
 
         # to encrypt password
         hash = pwd_context.encrypt(pass1)
-        u = users(request.form.get("name"), request.form.get("roll"),request.form.get("email"), request.form.get("username"), hash, 0, 0)
+        u = users(request.form.get("name"), request.form.get("roll"),request.form.get("email"), request.form.get("username"), hash)
         db.session.add(u)
-        try:
-            db.session.commit()
-        except:
-            return render_template("error.html", title = "error", message = "Username exist! or Something went Wrong.. Can't add you to database! ")
+        #try:
+        db.session.commit()
+        #except:
+            #return render_template("error.html", title = "error", message = "Username exist! or Something went Wrong.. Can't add you to database! ")
         
         # loging in the user
         session["user_id"] = u.id
 
         # redirect user to start page
-        return redirect(url_for("start"))
+        return redirect(url_for('profile'))
 
     else:
         return render_template( 'register.html', title='Sign Up', year= datetime.datetime.now().year)
 
   
-
-@app.route('/start',  methods = ["GET","POST"])
-@login_required
-def start():
-    """Renders the home page."""
-    userid = session["user_id"]
-    user = users.query.filter_by(id = userid).first()
-    if user.started != 0:
-        return redirect(url_for('profile'))
-    elif request.method == "POST":
-        v = request.form.get("go") 
-        if v == "start":
-            user = users.query.filter_by(id = userid).update(dict(started = 1, timeStarted = datetime.datetime.now()))
-            try:
-                db.session.commit()
-            except:
-                return render_template("error.html", title = "error", message = "Something went wrong!\n in Database")
-            return redirect(url_for('profile'))
-    else:
-        return render_template('start.html', title='Home Page', year = datetime.datetime.now().year)
-
 @app.route('/profile')
 @login_required
 def profile():
 
     uid = session['user_id']
     user = users.query.filter_by(id = uid).first()
-    if user.started == 0:
-        return redirect(url_for('start'))
-    timeRemaining = user.timeAlloted - int((datetime.datetime.now() - user.timeStarted).total_seconds())
-    if timeRemaining < 1:
-        flash("Timer Ended !! ")
-        return redirect(url_for('logout'))
-    return render_template('profile.html', name = user.name, title = user.name, problems = NUMBER_OF_PROBLEMS, time = timeRemaining*1000)
+    eventList = events.query.order_by(events.eid).all()
+    return render_template('profile.html', name = user.name, title = user.name, events=eventList)
 
 
 @app.route('/profile/submissions')
@@ -130,44 +112,97 @@ def submissions():
     uid = session["user_id"]
     user = users.query.filter_by(id = uid).first()
     post_s = posts.query.filter_by(user_id = uid).order_by(posts.ptime.desc()).all()
-    
-    if user.started == 0:
-        return redirect(url_for('start'))
-    
-    timeRemaining = user.timeAlloted - int((datetime.datetime.now() - user.timeStarted).total_seconds())
-    if timeRemaining < 1:
-        flash("Timer Ended !! ")
-        return redirect(url_for('logout'))
 
     return render_template('submissions.html', title = "Status", message = post_s, year= datetime.datetime.now().year)
 
 
-@app.route('/profile/score')
+@app.route('/profile/event/<int:number>', methods = ["GET","POST"])
 @login_required
-def score():
-    """Renders the about page."""
-    scoreBoard = users.query.order_by(users.score.desc()).all()
-    return render_template( 'score.html', title='Leaderboard', year= datetime.datetime.now().year, lists = scoreBoard)
+def event(number):
+
+    """Renders the event page."""
+    userid = session["user_id"]
+    user = users.query.filter_by(id = userid).first()
+    e = events.query.filter_by(eid=number).first()
+
+    if request.method == "POST":
+        go = request.form.get("go")
+
+        if go == "register":
+            
+            u = eventTablesNames[e.eid](userid, number, 0, datetime.datetime.now(), 0)
+            db.session.add(u)
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+        
+            return redirect(url_for('event', number = number)) 
+
+        if go == "start":
+            u = eventTablesNames[e.eid].query.filter_by(userId=userid).update(dict(started=1))
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+            return redirect(url_for('emain', number = number))
+
+    else:
+        u = eventTablesNames[e.eid].query.filter_by(userId=userid).first()
+        if u is None:
+            return render_template('startLayout.html', reg=False, title='Event Welcome', year = datetime.datetime.now().year, e=e)
+        if u.started == 1:
+            if datetime.datetime.now() < e.endTime:
+                return redirect(url_for('emain', number=number))
+
+        return render_template('startLayout.html', reg=True, title='Event Welcome', year = datetime.datetime.now().year, e=e)
 
 
-@app.route('/profile/upload', methods=["POST", "GET"])
+@app.route('/profile/event/<int:number>/emain')
 @login_required
-def upload():
+def emain(number):
+    "The Problem list for each event"
+
+    e = events.query.filter_by(eid=number).first()
+    timeRemaining = int((e.endTime - datetime.datetime.now()).total_seconds())*1000
+    
+    return render_template('emain.html', title='Main Page', num = number, eventName = e.name, timeLeft = timeRemaining, problems = e.numberOfProblems)
+
+
+@app.route('/profile/event/<int:number>/p/<int:id>')
+@login_required
+def p(number, id):
+
+    problems = getProblemList(number)
+    for i in problems:
+        if i[1].problemId == id:
+            prb = i[1]
+    
+    return render_template('problemLayout.html', title = "Problem " + str(id), P=prb)
+
+
+@app.route('/profile/event/<int:number>/score')
+@login_required
+def score(number):
+    """Renders the score page."""
+    evt = events.query.filter_by(eid = number).first() 
+    t = db.session.query(users.name, eventTablesNames[number]).join(eventTablesNames[number], users.id==eventTablesNames[number].userId).order_by(eventTablesNames[number].score.desc()).all()
+    return render_template( 'score.html', title='Leaderboard', year= datetime.datetime.now().year, num=evt.numberOfProblems, lists = t)
+
+
+@app.route('/profile/upload/<int:number>/p/<int:id>', methods=["POST", "GET"])
+@login_required
+def upload(number, id):
     global post_number
 
     uid = session["user_id"]
     user = users.query.filter_by(id = uid).first()
-    if user.started == 0:
-        return redirect(url_for('start'))
-    
-    timeRemaining = user.timeAlloted - int((datetime.datetime.now() - user.timeStarted).total_seconds())
-    if timeRemaining < 1:
-        flash("Timer Ended !! ")
-        return redirect(url_for('logout'))
-    
-    elif request.method == "POST":
+    evt = events.query.filter_by(eid = number).first()  
+        
+    if request.method == "POST":
         lang = request.form.get("lang")
         prbid = int(request.form.get("prbid"))
+        eventId = int(request.form.get("eventId"))
         
         # check if the post request has the file part
         if "solution" not in request.files.keys():
@@ -180,7 +215,7 @@ def upload():
             if file.filename == '':
                 filename1 = "noimage.txt"
             elif file and allowed_file(file.filename):
-                uniqueSubmissionId = "u" + str(uid) + "pn" + str(post_number) + "solToPrb" + str(prbid) + "_"
+                uniqueSubmissionId = "u" + str(uid) + "pn" + str(post_number) + "eid" + str(eventId) + "pid" + str(prbid) + "_"
                 filename1 = uniqueSubmissionId + secure_filename(file.filename)
                 path1 = os.path.join(app.config['UPLOAD_FOLDER'], filename1)
                 file.save(path1)
@@ -189,21 +224,22 @@ def upload():
 
         post_number += 1
 
-        p = posts(prbid, filename1, lang, "pending", uid)
+        p = posts(number, prbid, filename1, lang, "pending", uid)
         db.session.add(p)
         try:
             db.session.commit()
         except:
             return render_template("error.html", title = "error", message = "Something went wrong!\n in Database")
 
-        t = threading.Thread(target = submitAnswer, args = [p.pid, file.filename.split(".")[0], str(uid), str(prbid), lang, path1])
+        t = threading.Thread(target = submitAnswer, args = [p.pid, file.filename.split(".")[0], str(uid), str(eventId), str(prbid), lang, path1, eventTablesNames])
         t.setDaemon(False)
         t.start()
 
         # redirect user to profile page
         return redirect(url_for("submissions"))
     else:
-        return render_template( 'upload.html', title='Upload', problems = NUMBER_OF_PROBLEMS, year = datetime.datetime.now().year)
+        return render_template( 'upload.html', title='Upload', event=evt, selectedPid=id, year = datetime.datetime.now().year)
+
 
 
 @app.route('/error')
@@ -211,17 +247,6 @@ def upload():
 def error():
 
     return render_template("error.html")
-
-
-@app.route('/profile/p/<int:number>')
-@login_required
-def p(number):
-    if number > NUMBER_OF_PROBLEMS:
-        return render_template("error.html", title = "error", message = "Problem doesn't exist")
-        
-    page = "p" + str(number) + ".html"
-
-    return render_template(page, title = "Problem " + str(number))
 
 
 @app.route("/logout")

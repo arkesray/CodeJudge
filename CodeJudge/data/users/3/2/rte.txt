@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "fileClient.py", line 54, in <module>
-    Main()
-  File "fileClient.py", line 37, in Main
-    send = input('Send y/n : ')
-EOFError: EOF when reading a line

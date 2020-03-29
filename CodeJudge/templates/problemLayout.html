@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<br>
+<div class="card" style="width: 80%">
+    <div class="card-header">
+        <div class="d-flex justify-content-between">
+                <strong>Contest ID : {{ P.contestId }}</strong>
+                <a href="{{ url_for('emain', number=P.contestId) }}"> <strong>Event Name : {{ P.eventName }}</strong> </a>
+                <strong>Problem ID : {{ P.problemId }}</strong>
+        </div>
+    </div>
+    <div class="card-body">
+        <h4 class="card-title">{{ P.problemTitle }}</h4>
+        <div class="d-flex justify-content-end">
+            <h5 class="border-bottom border-primary ">Score : {{ P.score}}</h5>
+        </div>
+        {% for p in P.problemStatement %}
+        <p class="card-text">
+            {{ p }}
+        </p>
+        {% endfor %}
+        
+        <!--TO DO, images, and explanation-->
+
+        <h4 class="card-title">Constrains</h4>
+        {% for c in P.problemConstrains %}
+        <p class="card-text">
+                {{ c }}
+        </p>
+        {% endfor %}
+
+        {% for s in P.problemSamples %}
+        <h5 class="card-title">Sample Input {{loop.index}}</h5>
+        <p class="card-text" style="background-color:burlywood">
+        {% for inputLine in s[0] %}
+                {{inputLine}} <br>
+        {% endfor %}
+        </p>
+        <h5 class="card-title">Sample Ouput {{loop.index}}</h5>
+        <p class="card-text" style="background-color:burlywood">
+        {% for outputLine in s[1] %}
+                {{outputLine}} <br>
+        {% endfor %}
+        </p>
+        {% endfor %}
+
+        <h6 class="card-title">Additional Info</h6>
+        <p class="card-text" style="background-color:blanchedalmond">
+                {{ P.info }}
+        </p>
+
+        <a href="{{url_for('upload', number=P.contestId, id=P.problemId)}}" class="btn btn-primary">Submit Solution</a>
+        <br>
+        <br>
+        <hr>
+        <h6 class="card-title">Execution Time for each Language</h6>
+        <p class="card-text">
+                CPP : {{ P.TLE['cpp'] }} sec<br>
+                JAVA : {{ P.TLE['java'] }} sec<br>
+                PYTHON : {{ P.TLE['py'] }} sec<br>
+        </p>
+    </div>
+
+
+</div>
+
+{% endblock %}

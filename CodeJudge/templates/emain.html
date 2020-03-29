@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class = "row">
+        <div class = "col-md-3">
+            <div class="d-flex justify-content-start">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <div class="text-center"><h2>Time Remaining </h2></div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Display the countdown timer in an element -->
+                        <div class="text-center"><h2 id="countdown" class="btn btn-danger btn-lg"></h2></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class = "col-md-6 mx-auto">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h2><div class="text-center"><strong>{{ eventName }}</strong></div></h2>
+                </div>           
+                <div class="panel-body">
+                    <ul class="list-group">
+                        {% for p in range(problems) %}
+                        <li class="list-group-item"><a href="{{ url_for('p', number=num, id=loop.index) }}" class="btn btn-light col-sm-12">Problem {{loop.index }}</a></li>
+                        {%endfor%}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class = "col-md-3">
+            <div class="d-flex justify-content-end">
+                <a href="{{url_for('score', number=num)}}" class="btn btn-primary">Leaderborad</a>
+            </div>    
+        </div>
+    </div>
+</div>
+
+<script>
+    var countDownDate = {{ timeLeft }};
+    var timeMs = countDownDate;
+    function countdownTimer() {
+      timeMs = timeMs - 1000;
+      const difference = timeMs;
+      let remaining = "Time's up!";
+
+      if (difference > 0) {
+        const parts = {
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hrs: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          min: Math.floor((difference / 1000 / 60) % 60),
+          sec: Math.floor((difference / 1000) % 60)
+        };
+
+        remaining = Object.keys(parts)
+          .map(part => {
+            if (!parts[part]) return;
+            return `${parts[part]}${part}`;
+          })
+          .join(" ");
+      }
+
+      document.getElementById("countdown").innerHTML = remaining;
+    }
+
+    countdownTimer();
+    setInterval(countdownTimer, 1000);
+  </script>
+{% endblock %}

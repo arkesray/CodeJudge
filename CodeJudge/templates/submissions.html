@@ -5,7 +5,8 @@
 <table class="table table-bordered">
 	<thead style="background: black; color: white;">
 		<tr>
-			<th>Upload Time</th>
+            <th>Upload Time</th>
+            <th class="text-center">Event Id</th>
 			<th class="text-center">Problem Number</th>
 			<th class="text-center">Language</th>
 			<th><strong>Upload Status</th>
@@ -14,7 +15,8 @@
   <tbody style="background: white;">
     {% for post in message %}
         <tr> 
-            <td> {{post.ptime}} </td>  
+            <td> {{post.ptime}} </td>
+            <td class="text-center"> {{post.eid}} </td>  
             <td class="text-center"> {{post.prbid}} </td>
             <td class="text-center"> {{post.lang}} </td>
             <td> {{post.status}} </td>
@@ -31,6 +33,12 @@ setTimeout(function () {
         window.location.hash = 'r';
         window.location.reload(1);
     }
-}, 5000);
+}, 3000);
+setTimeout(function () {
+    if(window.location.hash != '##r') {
+        window.location.hash = '#r';
+        window.location.reload(1);
+    }
+}, 8000);
 </script>
 {% endblock %}

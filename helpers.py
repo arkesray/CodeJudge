@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import session, redirect
-from models import Judge, Problem, db, posts, users
-import os
+from models import Judge, Problem, db, posts, users, events
+import os, datetime
 
 myPath = os.path.abspath('') + "\\CodeJudge\\"
 
@@ -26,17 +26,66 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-NUMBER_OF_PROBLEMS = len(os.listdir(myPath + "data\\Problems"))
+
+#database creation
+
+db.create_all()
+
+eventNames = os.listdir(myPath + "database\\events")
+NUMBER_OF_EVENTS = len(eventNames)
 problems = []
-for i in range(NUMBER_OF_PROBLEMS):
-    problems.append(Problem(i+1, 100))
+
+for i in range(NUMBER_OF_EVENTS):
+    """ Getting events info """
+    h = open(myPath + "database\\events\\" + eventNames[i] + "\\info\\info.txt", "r")
+    h1 = h.read().splitlines()
+    h.close()
+
+    nn = len(os.listdir(myPath + "database\\events\\" + eventNames[i] + "\\problems\\" ))
+    for j in range(nn):
+        prbPath = myPath + "database\\events\\" + eventNames[i] + "\\problems\\" + "p" + str(j+1) +"\\"
+        p = Problem(prbPath, i+1, eventNames[i], j+1)
+        problems.append((i+1,p))
+    
+    e = events(eventNames[i], datetime.datetime.strptime(h1[0], "%d/%m/%Y %H:%M:%S"), datetime.datetime.strptime(h1[1], "%d/%m/%Y %H:%M:%S"), " ".join(h1[2:]),nn)
+    db.session.add(e)
+    try:
+        db.session.commit()
+        print("Tried helper")
+    except:
+        print("ERROR helper")
+        db.session.rollback()
 
 
-def submitAnswer(pid, file_name, uid, prbN, lang, file_path):
+def MyInit(self, uid, eid, s, st, score ):
+    self.userId = uid
+    self.eventId = eid
+    self.started = s
+    self.startTime = st
+    self.score = score
+
+eventTablesNames = {}
+allEvents = events.query.all()
+for ele in allEvents: 
+    N = ele.numberOfProblems
+    attr_dict = {'__tablename__': ele.name, 'userId': db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, unique=True), 'eventId': db.Column(db.Integer),
+     'started': db.Column(db.Integer), 'startTime': db.Column(db.DateTime), 'score': db.Column(db.Integer), '__init__': MyInit}  
+    for n in range(N):
+        attr_dict['p' + str(n +1)] = db.Column(db.Integer)
+    TEST = type(ele.name, (db.Model,), attr_dict)
+    eventTablesNames.update({ ele.eid : TEST })
+
+
+
+def getProblemList(eid):
+    return [v for v in problems if v[0] == eid]
+
+
+def submitAnswer(pid, file_name, uid, eid, prbN, lang, file_path, eventTablesNames):
     """
     A fucntion to invoke compile methods and update Database
     """
-    fileLocation = myPath + "data\\users\\" + uid + "\\" + prbN
+    fileLocation = myPath + "database\\events\\" + eventNames[int(eid)-1] + "\\users\\" + uid + "\\" + prbN
 
     if not os.path.exists(fileLocation):
         os.makedirs( fileLocation)
@@ -48,48 +97,66 @@ def submitAnswer(pid, file_name, uid, prbN, lang, file_path):
     h.close()
     f.close()
     
-    code = Judge(lang, problems[prbN - 1])
+    evtProblems = getProblemList(int(eid))
+    for i in evtProblems:
+        if i[1].problemId == int(prbN):
+            prb = i[1]
+    
+    code = Judge(lang, prb)
     if code.complie( fileLocation, file_name + "." + lang) is True:
-        if code.execute( fileLocation, file_name + "." + lang) is True:  #TODO; problem-language-input specific runtime
+        if code.execute( fileLocation, file_name + "." + lang) is True:
             code.check( fileLocation, file_name + "." + lang)
-
-    updateScore(pid, uid, int(prbN), lang, str(code.stdout.split("#")[1]))
+    
+    pStatus = str(code.stdout.split("#")[1])
+    updateStatus(pid, uid, int(eid), int(prbN), lang, pStatus)
+    updateScore(pid, uid, int(eid), int(prbN), lang, pStatus, eventTablesNames)
     return
 
 
-def updateScore(pid, uid, prbid, lang, pStatus):
-    """
-    Updates the database according to the score
-    """
-    p = posts.query.filter_by(pid = pid).update(dict(status = pStatus))
-    user = users.query.filter_by(id = uid).first()
-
-    score = calculateScore(pStatus)
-    if prbid == 1:
-        if user.p1 < score:
-            u = users.query.filter_by(id = uid).update(dict(p1 = score))
-    elif prbid == 2:
-        if user.p2 < score:
-            u = users.query.filter_by(id = uid).update(dict(p2 = score))
-    elif prbid == 3:
-        if user.p3 < score:
-            u = users.query.filter_by(id = uid).update(dict(p3 = score))
-    elif prbid == 4:
-        if user.p4 < score:
-            u = users.query.filter_by(id = uid).update(dict(p4 = score))
-    elif prbid == 5:
-        if user.p5 < score:
-            u = users.query.filter_by(id = uid).update(dict(p5 = score))
-    else:
-        print("ERROR Something Unexpected.")
-
+def updateStatus(pid, uid, eid, prbid, lang, pStatus):
     try:
-        db.session.commit()
-        score = user.p1 + user.p2 + user.p3 + user.p4 + user.p5
-        y = users.query.filter_by(id = uid).update(dict(score = score))
+        p = posts.query.filter_by(pid = pid).update(dict(status = pStatus))
         db.session.commit()
     except:
         print("Cannot Update Status in Datebase")
+
+    return
+
+
+def updateScore(pid, uid, eid, prbid, lang, pStatus, eventTablesNames):
+    """
+    Updates the database according to the score
+    """
+    # update score for a problem
+    eventPost = eventTablesNames[eid].query.filter_by(userId = uid).first()
+    pScore_old = getattr(eventPost, 'p'+str(prbid))
+    pScore = calculateScore(pStatus)
+    if pScore_old == None or pScore > pScore_old:
+        eventPost = eventTablesNames[eid].query.filter_by(userId = uid).update({"p" + str(prbid) : pScore})
+        try:
+            db.session.commit()
+        except:
+            print("Cannot Update Score in Datebase")
+
+
+    ### update total score
+    eventPost = eventTablesNames[eid].query.filter_by(userId = uid).first()
+    N = events.query.filter_by(eid = eid).first().numberOfProblems
+    pScores = [0]*N
+    for i in range(N):
+        ps = getattr(eventPost, 'p'+str(i+1))
+        if ps == None:
+            pScores.append(0)
+        else:
+            pScores.append(ps)
+    
+    score_old = getattr(eventPost, 'score')
+    if score_old == None or sum(pScores) > score_old:
+        eventPost = eventTablesNames[eid].query.filter_by(userId = uid).update({"score" : sum(pScores)})
+        try:
+            db.session.commit()
+        except:
+            print("Cannot Update Score in Datebase")
 
     return
 
@@ -103,3 +170,4 @@ def calculateScore(pStatus):
         return 100
     else:
         return 0
+

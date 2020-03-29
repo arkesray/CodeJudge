@@ -1,0 +1,7 @@
+__pycache__/
+.vscode
+CodeJudgeEnv/
+
+CodeJudge/uploads/
+CodeJudge/database/
+CodeJudge/flask_session/
