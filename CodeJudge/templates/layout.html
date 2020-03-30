@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+	  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    {% block meta %}{% endblock %}
+    
+    <link rel="stylesheet" type="text/css" href="/static/content/bootstrap.css" />
+    <script src="/static/scripts/jquery-1.10.2.min.js"></script>
+    <script src="/static/scripts/bootstrap.js"></script>
+
+    <title>{{ title }}: CodeJudge {{year}}</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark navbar-default navbar-static-top">
+        <div class = "container">
+            <a class="navbar-brand" href="{{url_for('home')}}">CodeJudge</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    {% if session.user_id %}
+
+                    <li class="nav-item ">
+                        <a class="nav-link" href="{{ url_for('profile') }}">My Profile </a>
+                    </li>                    
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('submissions')}}">Submissions</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('logout')}}">Logout</a>
+                    </li>
+                    {% else %}
+
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('home')}}">Home</a>
+                    </li>
+
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('register')}}">Register</a>
+                    </li>
+
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ url_for('login')}}">LogIn</a>
+                    </li>
+
+
+                    {% endif %} 
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class ="text-center">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class=flashes>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    </div>
+	<div class="container">
+        {% block content %}{% endblock %}
+    </div>
+	
+    
+
+    {% block scripts %} {% endblock %}
+	<footer>
+        <p class="text-center">&copy;  {{year}} - A Codathon Project</p>
+    </footer>
+    
+</body>
+</html>

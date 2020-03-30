@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+
+{% block meta %}
+<meta http-equiv="Refresh" content="30">
+{% endblock %}
+
+{% block content %}
+
+<h2 class="text-center">{{ title }}</h2>
+
+<table class="table table-bordered">
+	<thead style="background: black; color: white;">
+		<tr>
+			<th class="text-center">Rank</th>
+			<th class="text-center">User Name</th>
+			{% for i in range(num) %}
+			<th class="text-center">p{{i+1}}</th>
+			{% endfor %}
+			<th class="text-center">Score</th>
+		</tr>
+	</thead>
+	<tbody style="background: white;">
+    {% for user in lists %}
+        <tr> 
+            <td class="text-center">{{loop.index}}</td>  
+			<td class="text-center">{{user[0]}}</td>
+			{% for i in range(num) %}
+			<td class="text-center">{{user[1]['p'+ (i+1)|string ]}}</td>
+			{% endfor %}
+            <td class="text-center">{{user[1].score}}</td>
+        </tr>
+    {%endfor%}
+	</tbody>
+
+</table>
+
+
+{% endblock %}
+
+

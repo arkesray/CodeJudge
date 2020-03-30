@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+	<div class="col-md-3">
+	</div>
+
+    <div class="col-md-6">
+		<form action="{{ url_for('login')}}" method="post" class="form col-md-8 offset-md-2">
+			<div class="form-group">
+				<strong><label for="inputUsername" class="control-label">Username</label></strong>
+				<div>
+					<input type="text" class="form-control" id="inputName" placeholder="Enter Username" name="username" required>
+				</div>
+			</div>
+			<div class="form-group">
+				<strong><label for="inputPassword3" class="control-label">Password</label></strong>
+				<div>
+					<input type="password" class="form-control" id="inputPassword3" placeholder="Password" name="pass" required>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-md-4 offset-sm-4">
+					<button type="submit" class="btn btn-primary">Login</button>
+				</div>
+			</div>
+		</form>
+	</div>
+
+	<div class="col-md-3">
+	</div>
+</div>
+
+{% endblock %}

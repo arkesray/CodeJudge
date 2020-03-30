@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block meta %}
+<meta id="regVar" data-name="REGISTER" data-value="{{reg}}">
+<meta id="ctVar" data-name="START" data-value="{{ct}}">
+{% endblock %}
+
+{% block content %}
+Event Name : {{e.name}}<br>
+Event Description : {{e.description}}<br>
+Event Start Time : {{e.startTime}}<br>
+Event End Time : {{e.endTime}}<br>
+
+<div class="text-left"><h2 id="countdown" class="btn btn-danger btn-lg"></h2></div>
+
+<form action="{{ url_for('event', number=e.eid)}}" method="post" class="form col-md-12">
+    <div class="form-group">
+        <div class="text-center">
+            <button id="start" name = "go" value = "start" type="submit" class="btn btn-primary btn-lg">START</button>
+        </div>
+        <br>
+        <div class="text-center">
+            <button id="reg" name = "go" value = "register" type="submit" class="btn btn-primary btn-lg">Register</button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function(){
+    var btnReg = $('#reg');
+    var btnStart=$('#start');
+    var reg = $('#regVar').data();
+    var ct = $('#ctVar').data();
+    console.log(reg);
+    if (reg["value"] === "False" ) {
+        $(btnReg).prop('disabled', false);
+        $(btnStart).prop('disabled', true);
+    } else {
+        $(btnReg).prop('disabled', true);
+        if (ct["value"] === "True"){
+            $(btnStart).prop('disabled', false);
+        } else {
+            $(btnStart).prop('disabled', true);
+        }
+        
+    }
+});
+
+var countDownDate = {{ tts }};
+    var timeMs = countDownDate;
+    function countdownTimer() {
+      timeMs = timeMs - 1000;
+      const difference = timeMs;
+      let remaining = "Started";
+
+      if (difference > 0) {
+        const parts = {
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hrs: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          min: Math.floor((difference / 1000 / 60) % 60),
+          sec: Math.floor((difference / 1000) % 60)
+        };
+
+        remaining = Object.keys(parts)
+          .map(part => {
+            if (!parts[part]) return;
+            return `${parts[part]}${part}`;
+          })
+          .join(" ");
+      }
+
+      document.getElementById("countdown").innerHTML = remaining;
+    }
+
+    countdownTimer();
+    setInterval(countdownTimer, 1000);
+</script>
+{% endblock %}

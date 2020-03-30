@@ -1,0 +1,30 @@
+A sample Problem
+100
+
+Problem Statement line1
+line2
+line3
+
+i>0
+j<100
+
+input1 line1
+input1 line2
+--
+output1 line1
+output1 line2
+output1 line3
+----
+input2 line1
+--
+output2 line1
+----
+
+Any additional info, future improvements, image attachments.
+
+cpp 1
+py 3
+java 2
+
+
+

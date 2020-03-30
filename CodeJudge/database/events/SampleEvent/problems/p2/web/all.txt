@@ -1,0 +1,21 @@
+Print Hello
+100
+
+get an input N integer from user.
+append it with 'Hello'
+
+N<100
+
+0
+--
+Hello0
+----
+
+Any additional info, future improvements, image attachments.
+
+cpp 1
+py 3
+java 2
+
+
+
