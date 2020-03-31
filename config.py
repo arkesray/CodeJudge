@@ -1,7 +1,10 @@
 import os
 from tempfile import mkdtemp
-
-UPLOAD_FOLDER = os.path.abspath("") + "\\CodeJudge\\uploads"
+uploadFolderPath = os.path.abspath("") + "\\CodeJudge\\uploads"
+if not os.path.exists(uploadFolderPath):
+        os.makedirs(uploadFolderPath)
+        
+UPLOAD_FOLDER = uploadFolderPath
 SECRET_KEY = "Test"
 
 SQLALCHEMY_DATABASE_URI = 'sqlite:///database/database.db'

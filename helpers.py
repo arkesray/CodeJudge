@@ -99,7 +99,7 @@ def submitAnswer(pid, file_name, uid, eid, prbN, lang, file_path, eventTablesNam
     fileLocation = myPath + "database\\events\\" + eventNames[int(eid)-1] + "\\users\\" + uid + "\\" + prbN
 
     if not os.path.exists(fileLocation):
-        os.makedirs( fileLocation)
+        os.makedirs(fileLocation)
     
     #copying
     h = open( fileLocation + "\\" + file_name + "." + lang, 'w')
